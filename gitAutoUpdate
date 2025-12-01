@@ -1,0 +1,5 @@
+cd /home/exp/specl-exp/data6
+git add *
+git commit -am "automatic update"
+git push
+
