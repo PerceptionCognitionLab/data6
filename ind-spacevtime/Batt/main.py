@@ -20,16 +20,14 @@ sys.path.insert(0, 'E:/data6/ind-spacevtime/TPi/')
 from TPi import runTP
 
 seed = random.randrange(1e6)
-dbConf=exlib.beta
+dbConf=exlib.data6
 expName="indSVT"
 n_practices = 1
-n_trials = 4
-
-
-refreshRate=60
+n_trials = 2
+refreshRate=120
 exlib.setRefreshRate(refreshRate)
-[pid,_,_]=exlib.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
-# pid = 1
+pool = 3
+[pid,_,_]=exlib.startExp(expName,dbConf,pool,lockBox=True,refreshRate=refreshRate)
 session = 0
 fileCheck = f"E:/data6/ind-spacevtime/SGabor/Data/{pid}_SGabor.csv"
 if os.path.exists(fileCheck):

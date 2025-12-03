@@ -22,11 +22,12 @@ LETTER_SET = ["F","H","J","K","L","N","P","Q","R","S","T","Y"]
 ACCURACY_CRITERION = 0.85
 
 # Filenames (absolute paths in working directory)
-pid = 1
-#refreshRate = 165
-#dbConf=exlib.beta
-#expName="indSVT"
-#[pid,sid,fname]=exlib.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
+refreshRate = 165
+exlib.setRefreshRate(refreshRate)
+pool = 3
+dbConf=exlib.data6
+expName="indSVT"
+[pid,sid,fname]=exlib.startExp(expName,dbConf,pool=pool,lockBox=True,refreshRate=refreshRate)
 triallog_path = os.path.abspath(f"Data/{pid}_OSpan.csv")
 summary_path = os.path.abspath(f"Data_summary/{pid}_OSpan_summary.csv")
 

@@ -25,11 +25,12 @@ SETS_PER_SIZE = 1
 FEEDBACK_DURATION = 2.0
 
 # File paths
-pid = 1
-#refreshRate = 165
-#dbConf=exlib.beta
-#expName="indSVT"
-#[pid,sid,fname]=exlib.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
+refreshRate = 165
+exlib.setRefreshRate(refreshRate)
+pool = 3
+dbConf=exlib.data6
+expName="indSVT"
+[pid,sid,fname]=exlib.startExp(expName,dbConf,pool=pool,lockBox=True,refreshRate=refreshRate)
 triallog_path = os.path.abspath(f"Data/{pid}_CSpan.csv")
 summary_path = os.path.abspath(f"Data_summary/{pid}_CSpan_summary.csv")
 
