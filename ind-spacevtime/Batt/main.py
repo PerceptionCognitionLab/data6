@@ -22,9 +22,9 @@ from TPi import runTP
 seed = random.randrange(1e6)
 dbConf=exlib.data6
 expName="indSVT"
-n_practices = 1
-n_trials = 2
-refreshRate=120
+n_practices = 50
+n_trials = 50
+refreshRate=165
 exlib.setRefreshRate(refreshRate)
 pool = 3
 [pid,_,_]=exlib.startExp(expName,dbConf,pool,lockBox=True,refreshRate=refreshRate)
