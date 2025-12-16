@@ -1,0 +1,4 @@
+trial	points_drawn	correct	final_pot_val	trial_score
+0	11	-1	929	50
+1	6	1	483	10
+2	3	1	507	1

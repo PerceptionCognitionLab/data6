@@ -1,0 +1,463 @@
+from psychopy import visual, core, event
+import random
+import numpy as np
+import csv
+import os
+from datetime import datetime
+
+# =========================
+# Configuration & Globals
+# =========================
+WIN_SIZE = (1920, 1080)
+FULLSCR = True
+UNITS = "pix"
+LETTER_DURATION = 0.800  # seconds each letter shown
+FEEDBACK_DURATION = 2.000
+MATH_PRACTICE_TRIALS = 5
+SET_SIZES = [3,4,5,6,7]     
+SETS_PER_SIZE = 3
+combined_practice_sets = [2,2,2]
+LETTER_SET = ["F", "H", "J", "K", "L", "N", "P", "Q", "R", "S", "T", "Y"]
+ACCURACY_CRITERION = 0.85
+
+# File paths
+name = 'test'
+triallog_path = os.path.abspath(f"{name}_trials.csv")
+summary_path = os.path.abspath(f"{name}_summary.csv")
+
+# =========================
+# Window & IO setup
+# =========================
+win = visual.Window(size=WIN_SIZE, units=UNITS, fullscr=FULLSCR, color=(0, 0, 0))
+mouse = event.Mouse(win=win, visible=True)
+
+# Text display settings
+text_kwargs = dict(color='white', height=32, alignText='center', wrapWidth=1600)
+small_text_kwargs = dict(color='white', height=24, alignText='center', wrapWidth=1600)
+red_small_text_kwargs = dict(color='red', height=28, alignText='right')
+
+msg = visual.TextStim(win, text='', **text_kwargs)
+msg_small = visual.TextStim(win, text='', **small_text_kwargs)
+acc_text = visual.TextStim(win, text='', **red_small_text_kwargs)
+
+# =========================
+# Utility functions
+# =========================
+def check_escape():
+    """Allow the experiment to quit when ESC is pressed."""
+    if 'escape' in event.getKeys(['escape']):
+        win.close()
+        core.quit()
+
+def draw_accuracy_counts(running_correct, running_total):
+    """Show current math accuracy % at top-right corner."""
+    if running_total <= 0:
+        acc_text.text = "100%"
+    else:
+        acc = running_correct / float(running_total)
+        acc_text.text = f"{int(round(acc * 100))}%"
+    acc_text.pos = (win.size[0] // 2 - 110, win.size[1] // 2 - 60)
+    acc_text.draw()
+
+def show_instructions(text):
+    """Display instructions and wait for mouse click."""
+    mouse.clickReset()
+    while True:
+        check_escape()
+        msg.text = text
+        msg.draw()
+        msg_small.text = "Click to continue"
+        msg_small.pos = (0, -win.size[1] // 2 + 100)
+        msg_small.draw()
+        win.flip()
+        if mouse.getPressed()[0]:
+            core.wait(0.2)
+            return
+        core.wait(0.01)
+
+# =========================
+# UI Components
+# =========================
+class Button:
+    """Simple rectangular button with text label."""
+    def __init__(self, win, text, pos, size=(220, 70)):
+        self.rect = visual.Rect(win, width=size[0], height=size[1], pos=pos,
+                                fillColor=(-0.2, -0.2, -0.2), lineColor=(0.7, 0.7, 0.7))
+        self.label = visual.TextStim(win, text=text, pos=pos, color='white', height=28)
+    def draw(self):
+        self.rect.draw()
+        self.label.draw()
+    def contains(self, mouse):
+        return self.rect.contains(mouse)
+
+def build_letter_grid(win, letters):
+    """Build 4x3 clickable grid of letter buttons."""
+    cols, rows = 4, 3
+    spacing_x, spacing_y = 220, 140
+    origin_x = - (cols - 1) / 2 * spacing_x
+    origin_y = + (rows - 1) / 2 * spacing_y
+    buttons = []
+    k = 0
+    for r in range(rows):
+        for c in range(cols):
+            pos = (origin_x + c * spacing_x, origin_y - r * spacing_y)
+            btn = Button(win, letters[k], pos, size=(100, 80))
+            buttons.append(btn)
+            k += 1
+    return buttons
+
+# =========================
+# Task Elements
+# =========================
+def gen_math_problem():
+    """Generate a random math problem with a possibly incorrect shown result."""
+    ops = ['add', 'sub', 'mul', 'div']
+    op = random.choice(ops)
+    if op == 'add':
+        a, b = random.randint(1, 9), random.randint(1, 9)
+        correct = a + b
+        prob = f"{a} + {b} = ?"
+    elif op == 'sub':
+        a, b = random.randint(2, 9), random.randint(1, 8)
+        if b > a: a, b = b, a
+        correct = a - b
+        prob = f"{a} - {b} = ?"
+    elif op == 'mul':
+        a, b = random.randint(1, 9), random.randint(1, 9)
+        correct = a * b
+        prob = f"{a} * {b} = ?"
+    else:
+        b = random.randint(1, 9)
+        correct = random.randint(1, 9)
+        a = b * correct
+        prob = f"{a} / {b} = ?"
+
+    is_true = random.random() < 0.5
+    shown = correct if is_true else correct + random.choice([-3, -2, -1, 1, 2, 3])
+    return prob, correct, shown, is_true
+
+def math_problem_screen(problem_text, vis_correct, vis_total):
+    """Show a math problem until participant clicks to continue."""
+    clock = core.Clock()
+    mouse.clickReset()
+    while True:
+        check_escape()
+        msg.text = f"Solve mentally:\n\n{problem_text}\n\nClick when done."
+        msg.draw()
+        draw_accuracy_counts(vis_correct, vis_total)
+        win.flip()
+        if mouse.getPressed()[0]:
+            rt = clock.getTime()
+            core.wait(0.15)
+            return rt
+        core.wait(0.01)
+
+def math_answer_screen(shown_answer, vis_correct, vis_total):
+    """Show proposed answer and collect TRUE/FALSE."""
+    clock = core.Clock()
+    true_btn = Button(win, "TRUE", pos=(-160, -200))
+    false_btn = Button(win, "FALSE", pos=(160, -200))
+    mouse.clickReset()
+    while True:
+        check_escape()
+        msg.text = f"Proposed answer:\n\n{shown_answer}\n\nClick TRUE or FALSE."
+        msg.draw()
+        true_btn.draw(); false_btn.draw()
+        draw_accuracy_counts(vis_correct, vis_total)
+        win.flip()
+        if mouse.getPressed()[0]:
+            if true_btn.contains(mouse):
+                rt = clock.getTime(); core.wait(0.15)
+                return True, rt
+            if false_btn.contains(mouse):
+                rt = clock.getTime(); core.wait(0.15)
+                return False, rt
+        core.wait(0.01)
+
+def present_letter(letter, vis_correct, vis_total):
+    """Display one letter for fixed duration."""
+    t0 = core.getTime()
+    while core.getTime() - t0 < LETTER_DURATION:
+        check_escape()
+        msg.text = letter
+        msg.draw()
+        draw_accuracy_counts(vis_correct, vis_total)
+        win.flip()
+
+def recall_screen(set_size, vis_correct, vis_total):
+    """Letter recall grid for clicking letters in order."""
+    grid = build_letter_grid(win, LETTER_SET)
+    blank_btn = Button(win, "blank", pos=(-240, -300))
+    clear_btn = Button(win, "clear", pos=(0, -300))
+    exit_btn = Button(win, "Exit", pos=(240, -300))
+    recalled = []
+    mouse.clickReset()
+
+    while True:
+        check_escape()
+        msg_small.text = f"Select letters in order (remaining: {set_size - len(recalled)})"
+        msg_small.pos = (0, 300)
+        msg_small.draw()
+        draw_accuracy_counts(vis_correct, vis_total)
+        for b in grid: b.draw()
+        for b in [blank_btn, clear_btn, exit_btn]: b.draw()
+        curr = "".join([c if c else "_" for c in recalled])
+        msg.text = curr; msg.pos = (0, 200); msg.draw(); msg.pos = (0, 0)
+        win.flip()
+
+        if mouse.getPressed()[0]:
+            if blank_btn.contains(mouse):
+                if len(recalled) < set_size: recalled.append(None)
+                core.wait(0.15)
+            elif clear_btn.contains(mouse):
+                recalled = []; core.wait(0.15)
+            elif exit_btn.contains(mouse):
+                break
+            else:
+                for i, b in enumerate(grid):
+                    if b.contains(mouse):
+                        if len(recalled) < set_size:
+                            recalled.append(LETTER_SET[i])
+                        core.wait(0.15)
+                        break
+        if len(recalled) >= set_size:
+            break
+        core.wait(0.01)
+
+    while len(recalled) < set_size:
+        recalled.append(None)
+    return recalled
+
+def feedback_screen(n_correct_in_set, set_size, math_errors_in_set):
+    """Display feedback after each set."""
+    t_end = core.getTime() + FEEDBACK_DURATION
+    while core.getTime() < t_end:
+        check_escape()
+        msg.text = f"You recalled {n_correct_in_set}/{set_size} correctly\nMath errors: {math_errors_in_set}"
+        msg.draw()
+        win.flip()
+
+# =========================
+# Scoring & Saving
+# =========================
+def compute_scores(trials_by_set, letters_presented_by_set, recalls_by_set, math_accuracy_errors_by_set):
+    """Compute OSPAN scores (ignore timeout)."""
+    total_correct, absolute_score, math_accuracy_errors = 0, 0, 0
+    for s, set_size in enumerate(trials_by_set):
+        presented = letters_presented_by_set[s]
+        recalled = recalls_by_set[s]
+        correct_positions = sum(1 for i in range(set_size) if recalled[i] == presented[i])
+        total_correct += correct_positions
+        if correct_positions == set_size:
+            absolute_score += set_size
+        math_accuracy_errors += math_accuracy_errors_by_set[s]
+    math_total = sum(trials_by_set)
+    math_correct = math_total - math_accuracy_errors
+    math_accuracy_rate = math_correct / max(1, math_total)
+    return dict(
+        ospan_absolute=absolute_score,
+        total_correct=total_correct,
+        math_errors=math_accuracy_errors,
+        accuracy_errors=math_accuracy_errors,
+        math_accuracy_rate=math_accuracy_rate,
+        math_total=math_total
+    )
+
+def save_triallog(trial_rows, path):
+    """Save all trial-level data to CSV."""
+    fieldnames = [
+        'block_type','set_index','set_size','trial_in_set',
+        'problem_text','shown_answer','is_true_display','resp_true','resp_correct',
+        'timeout','rt_problem','rt_answer','letter','letter_position',
+        'recall_letter','recall_correct'
+    ]
+    with open(path, 'w', newline='', encoding='utf-8-sig') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in trial_rows:
+            writer.writerow(row)
+
+def save_summary(summary_dict, path):
+    """Save participant summary stats."""
+    fieldnames = list(summary_dict.keys())
+    with open(path, 'w', newline='', encoding='utf-8-sig') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerow(summary_dict)
+
+# =========================
+# Main flow
+# =========================
+show_instructions(
+    "Welcome to the experiment!\n\nIn this task, you need to repeat two steps: (1) quickly solve a math problem, and (2) a letter to remember.\nAfter a few of these, you'll select the letters in the exact order they appeared.\n\nWe will begin with some practices on (1) and (2)")
+
+
+# ---- Practice 1: Letters only
+show_instructions(
+    "Practice 1: Letter recall\n\nYou'll see a sequence of letters flashing briefly one by one (each 800 ms). Then you'll click the letters displayed in a matrix in the same order they appeared."
+)
+letters_prac = random.sample(LETTER_SET, 2)
+for L in letters_prac:
+    present_letter(L, 0, 0)
+recall = recall_screen(2, 0, 0)
+feedback_screen(sum(1 for i in range(2) if recall[i] == letters_prac[i]), 2, 0)
+
+show_instructions(
+    "Practice 2: Math judgment\n\nFirst you'll see a math problem — solve it in your head and click to continue. Then you'll see a proposed answer — click TRUE or FALSE.\nWe'll use your practice speed to set a reasonable pace for the main task."
+)
+math_problem_rts, math_answer_rts = [], []
+prac_correct, prac_total = 0, 0
+for _ in range(MATH_PRACTICE_TRIALS):
+    prob, correct, shown, is_true = gen_math_problem()
+    rt_prob = math_problem_screen(prob, prac_correct, prac_total)
+    resp_true, rt_ans = math_answer_screen(shown, prac_correct, prac_total)
+    if resp_true is not None:
+        prac_total += 1
+        if resp_true == is_true: prac_correct += 1
+    math_problem_rts.append(rt_prob)
+    math_answer_rts.append(rt_ans)
+combo_rts = [p + a for p, a in zip(math_problem_rts, math_answer_rts)]
+PERSONAL_TIME_LIMIT = float(np.mean(combo_rts) + 2.5 * np.std(combo_rts, ddof=1))
+
+# ---- Practice 3: Combined
+msg_white = visual.TextStim(win,
+    text="Practice 3:  Combined tasks (Letter recall + Math judgment) \n\nNow it all comes together: math problem → answer judgement → letter display. You need to judge the answer for the math problem correctly and quickly, and also remember the letter in order.\n\n At the end, you'll click the letters displayed in a matrix in the same order they appeared. You'll do 3 short sets of size 2.\n",
+    color='white', height=25, wrapWidth=1600, alignText='center'
+)
+
+msg_red = visual.TextStim(win,
+    text="You should not make any mistake in the math problem or be significantly slower than you did in the practice trial, trading for better remembering the letter sequence. Any violation will result in 0 score for the particular set.",
+    color=(1, 0.4, 0.4), height=25, wrapWidth=1600, alignText='center'
+)
+
+mouse.clickReset()
+while True:
+    check_escape()
+    msg_red.pos = (0, 150)
+    msg_white.draw()
+    msg_red.pos = (0, -150)
+    msg_red.draw()
+    msg_small.text = "Click to continue"
+    msg_small.pos = (0, -win.size[1]//2 + 100)
+    msg_small.draw()
+    win.flip()
+    if mouse.getPressed()[0]:
+        core.wait(0.2)
+        break
+    core.wait(0.01)
+
+# =========================
+# Task loops
+# =========================
+trial_rows = []
+letters_presented_by_set, recalls_by_set, trials_by_set, math_accuracy_errors_by_set = [], [], [], []
+
+# ---- Combined Practice
+for set_idx, set_size in enumerate(combined_practice_sets, start=1):
+    set_correct = set_total = acc_errors = 0
+    letters_seq = random.sample(LETTER_SET, set_size)
+    for t in range(set_size):
+        prob, correct, shown, is_true = gen_math_problem()
+        rt_prob = math_problem_screen(prob, set_correct, set_total)
+        resp_true, rt_ans = math_answer_screen(shown, set_correct, set_total)
+        resp_correct = resp_true == is_true if resp_true is not None else False
+        total_rt = rt_prob + rt_ans
+        timeout = total_rt > PERSONAL_TIME_LIMIT
+        if resp_true is not None:
+            set_total += 1
+            if resp_correct: set_correct += 1
+            else: acc_errors += 1
+        present_letter(letters_seq[t], set_correct, set_total)
+        trial_rows.append(dict(
+            block_type='practice_combined', set_index=set_idx, set_size=set_size, trial_in_set=t+1,
+            problem_text=str(prob), shown_answer=shown, is_true_display=is_true,
+            resp_true=resp_true, resp_correct=resp_correct, timeout=timeout,
+            rt_problem=rt_prob, rt_answer=rt_ans, letter=letters_seq[t],
+            letter_position=t+1, recall_letter='', recall_correct=''
+        ))
+    recalled = recall_screen(set_size, set_correct, set_total)
+    # ✅ write recall results
+    for i, rec in enumerate(recalled):
+        trial_rows[-set_size + i]['recall_letter'] = rec if rec is not None else ''
+        trial_rows[-set_size + i]['recall_correct'] = rec == letters_seq[i]
+    feedback_screen(sum(1 for i in range(set_size) if recalled[i] == letters_seq[i]), set_size, acc_errors)
+
+# ---- Main task
+msg_white = visual.TextStim(win,
+    text="Main task\n\nYou'll complete 15 combined tasks (math problem → answer judgement → letter display).\n",
+    color='white', height=35, wrapWidth=1600, alignText='center'
+)
+
+msg_red = visual.TextStim(win,
+    text="You should not make any mistake in the math problem or be significantly slower than you did in the practice trial, trading for better remembering the letter sequence. Any violation will result in 0 score for the particular set.",
+    color=(1, 0.4, 0.4), height=27, wrapWidth=1600, alignText='center'
+)
+
+mouse.clickReset()
+while True:
+    check_escape()
+    msg_white.draw()
+    msg_red.pos = (0, -150)
+    msg_red.draw()
+    msg_small.text = "Click to continue"
+    msg_small.pos = (0, -win.size[1]//2 + 100)
+    msg_small.draw()
+    win.flip()
+    if mouse.getPressed()[0]:
+        core.wait(0.2)
+        break
+    core.wait(0.01)
+
+all_set_sizes = [s for s in SET_SIZES for _ in range(SETS_PER_SIZE)]
+random.shuffle(all_set_sizes)
+for set_idx, set_size in enumerate(all_set_sizes, start=1):
+    set_correct = set_total = acc_errors = 0
+    letters_seq = random.sample(LETTER_SET, set_size)
+    for t in range(set_size):
+        prob, correct, shown, is_true = gen_math_problem()
+        rt_prob = math_problem_screen(prob, set_correct, set_total)
+        resp_true, rt_ans = math_answer_screen(shown, set_correct, set_total)
+        total_rt = rt_prob + rt_ans
+        timeout = total_rt > PERSONAL_TIME_LIMIT
+        resp_correct = resp_true == is_true if resp_true is not None else False
+        if resp_true is not None:
+            set_total += 1
+            if resp_correct: set_correct += 1
+            else: acc_errors += 1
+        present_letter(letters_seq[t], set_correct, set_total)
+        trial_rows.append(dict(
+            block_type='main', set_index=set_idx, set_size=set_size, trial_in_set=t+1,
+            problem_text=str(prob), shown_answer=shown, is_true_display=is_true,
+            resp_true=resp_true, resp_correct=resp_correct, timeout=timeout,
+            rt_problem=rt_prob, rt_answer=rt_ans, letter=letters_seq[t],
+            letter_position=t+1, recall_letter='', recall_correct=''
+        ))
+    recalled = recall_screen(set_size, set_correct, set_total)
+    for i, rec in enumerate(recalled):
+        trial_rows[-set_size + i]['recall_letter'] = rec if rec is not None else ''
+        trial_rows[-set_size + i]['recall_correct'] = rec == letters_seq[i]
+    feedback_screen(sum(1 for i in range(set_size) if recalled[i] == letters_seq[i]), set_size, acc_errors)
+    letters_presented_by_set.append(letters_seq)
+    recalls_by_set.append(recalled)
+    trials_by_set.append(set_size)
+    math_accuracy_errors_by_set.append(acc_errors)
+
+# ---- Save everything
+summary = compute_scores(trials_by_set, letters_presented_by_set, recalls_by_set, math_accuracy_errors_by_set)
+summary.update(dict(personal_time_limit=PERSONAL_TIME_LIMIT))
+save_triallog(trial_rows, triallog_path)
+save_summary(summary, summary_path)
+
+# ---- Final screen
+include_text = "included" if summary['math_accuracy_rate'] >= ACCURACY_CRITERION else "EXCLUDED (math accuracy < 85%)"
+show_instructions(
+    f"Task complete!\n\nOSPAN absolute: {summary['ospan_absolute']}\n"
+    f"Total correct positions: {summary['total_correct']}\n"
+    f"Math accuracy: {summary['math_accuracy_rate']*100:.1f}%\n"
+    f"Errors: {summary['accuracy_errors']}\n"
+    f"Timeouts were recorded but not penalized.\n\n"
+    f"Participant status: {include_text}."
+)
+
+win.close()
+core.quit()
