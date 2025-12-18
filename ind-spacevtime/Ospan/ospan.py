@@ -4,6 +4,7 @@ import numpy as np
 import csv
 import os
 import sys
+
 sys.path.insert(0, 'E:/lib/data6')
 import expLib61 as exlib
 
@@ -13,21 +14,33 @@ import expLib61 as exlib
 WIN_SIZE = (1920, 1080)
 FULLSCR = True
 UNITS = "pix"
+
 LETTER_DURATION = 0.800  # seconds
 FEEDBACK_DURATION = 2.000
+
 MATH_PRACTICE_TRIALS = 15
 SET_SIZES = [3, 4, 5, 6, 7]
 SETS_PER_SIZE = 3
+
 LETTER_SET = ["F","H","J","K","L","N","P","Q","R","S","T","Y"]
 ACCURACY_CRITERION = 0.85
 
-# Filenames (absolute paths in working directory)
+# Optional: a hard safety cap so people can’t stall forever on TRUE/FALSE
+HARD_MAX_JUDGEMENT_TIME = None  # e.g., 30.0; set None to disable
+
+# =========================
+# Filenames & exlib
+# =========================
 refreshRate = 165
 exlib.setRefreshRate(refreshRate)
 pool = 3
-dbConf=exlib.data6
-expName="indSVT"
-[pid,sid,fname]=exlib.startExp(expName,dbConf,pool=pool,lockBox=True,refreshRate=refreshRate)
+dbConf = exlib.data6
+expName = "indSVT"
+[pid, sid, fname] = exlib.startExp(expName, dbConf, pool=pool, lockBox=True, refreshRate=refreshRate)
+
+os.makedirs("Data", exist_ok=True)
+os.makedirs("Data_summary", exist_ok=True)
+
 triallog_path = os.path.abspath(f"Data/{pid}_OSpan.csv")
 summary_path = os.path.abspath(f"Data_summary/{pid}_OSpan_summary.csv")
 
@@ -37,7 +50,6 @@ summary_path = os.path.abspath(f"Data_summary/{pid}_OSpan_summary.csv")
 win = visual.Window(size=WIN_SIZE, units=UNITS, fullscr=FULLSCR, color=(0,0,0))
 mouse = event.Mouse(win=win, visible=True)
 
-# Text styles
 text_kwargs = dict(color='white', height=32, alignText='center', wrapWidth=1600)
 small_text_kwargs = dict(color='white', height=24, alignText='center', wrapWidth=1600)
 red_small_text_kwargs = dict(color='red', height=28, alignText='right')
@@ -49,13 +61,10 @@ acc_text = visual.TextStim(win, text='', **red_small_text_kwargs)
 # =========================
 # Utilities
 # =========================
-
 def check_escape():
     if 'escape' in event.getKeys(['escape']):
         win.close()
         core.quit()
-
-# Persistent accuracy drawer: shows 100% when total==0 (start of set)
 
 def draw_accuracy_counts(running_correct, running_total):
     if running_total <= 0:
@@ -65,8 +74,6 @@ def draw_accuracy_counts(running_correct, running_total):
         acc_text.text = f"{int(round(acc*100))}%"
     acc_text.pos = (win.size[0]//2 - 110, win.size[1]//2 - 60)
     acc_text.draw()
-
-# Show instructions and wait for click
 
 def show_instructions(text):
     mouse.clickReset()
@@ -83,19 +90,25 @@ def show_instructions(text):
             return
         core.wait(0.01)
 
+# =========================
 # Button UI
-
+# =========================
 class Button:
     def __init__(self, win, text, pos, size=(220,70)):
-        self.rect = visual.Rect(win, width=size[0], height=size[1], pos=pos,
-                                fillColor=(-0.2,-0.2,-0.2), lineColor=(0.7,0.7,0.7))
+        self.rect = visual.Rect(
+            win,
+            width=size[0], height=size[1], pos=pos,
+            fillColor=(-0.2,-0.2,-0.2),
+            lineColor=(0.7,0.7,0.7)
+        )
         self.label = visual.TextStim(win, text=text, pos=pos, color='white', height=28)
+
     def draw(self):
-        self.rect.draw(); self.label.draw()
+        self.rect.draw()
+        self.label.draw()
+
     def contains(self, mouse):
         return self.rect.contains(mouse)
-
-# Letter grid for recall (4×3)
 
 def build_letter_grid(win, letters):
     cols, rows = 4, 3
@@ -115,10 +128,8 @@ def build_letter_grid(win, letters):
 # =========================
 # Task elements
 # =========================
-# Math problem generator (ASCII operators to avoid CSV garbling)
-
 def gen_math_problem():
-    """Generate an arithmetic problem and a shown answer.
+    """Generate arithmetic and a shown answer.
     Returns: problem_str, correct_answer, shown_answer, is_true_display
     """
     ops = ['add','sub','mul','div']
@@ -142,6 +153,7 @@ def gen_math_problem():
         correct = random.randint(1,9)
         a = b * correct
         prob = f"{a} / {b} = ?"
+
     is_true = random.random() < 0.5
     if is_true:
         shown = correct
@@ -151,8 +163,6 @@ def gen_math_problem():
         if shown == correct:
             shown += 1
     return prob, correct, shown, is_true
-
-# Problem screen (persistent accuracy)
 
 def math_problem_screen(problem_text, vis_correct, vis_total):
     clock = core.Clock()
@@ -173,33 +183,57 @@ def math_problem_screen(problem_text, vis_correct, vis_total):
             return rt
         core.wait(0.01)
 
-# Answer screen (persistent accuracy)
-
-def math_answer_screen(shown_answer, time_limit, vis_correct, vis_total):
+def math_answer_screen(shown_answer, time_limit, vis_correct, vis_total, hard_max_time=None):
+    """
+    Keep speed-error detection (time_limit) BUT do not skip judgement.
+    If clock > time_limit: speed_violation=True (record once), but keep waiting for response.
+    Returns: resp_true (True/False or None if hard cap hit), rt, speed_violation (bool)
+    """
     clock = core.Clock()
     true_btn = Button(win, "TRUE", pos=(-160, -200))
     false_btn = Button(win, "FALSE", pos=(160, -200))
     buttons = [true_btn, false_btn]
     mouse.clickReset()
+
+    speed_violation = False
+
     while True:
         check_escape()
+
+        t = clock.getTime()
+
+        # mark speed error once, but DO NOT return/skip
+        if (time_limit is not None) and (not speed_violation) and (t > time_limit + 2):
+            speed_violation = True
+
+        # optional hard cap (rarely needed)
+        if (hard_max_time is not None) and (t > hard_max_time):
+            return None, t, speed_violation
+
         msg.text = f"Proposed answer:\n\n{shown_answer}\n\nChoose TRUE or FALSE"
         msg.draw()
-        for b in buttons: b.draw()
+        for b in buttons:
+            b.draw()
         draw_accuracy_counts(vis_correct, vis_total)
+
+        if speed_violation:
+            msg_small.text = "Too slow (speed error recorded). Please respond now."
+            msg_small.pos = (0, -win.size[1]//2 + 120)
+            msg_small.draw()
+
         win.flip()
-        if time_limit is not None and clock.getTime() > time_limit:
-            return None, clock.getTime()  # timeout
+
         if mouse.getPressed()[0]:
             if true_btn.contains(mouse):
-                rt = clock.getTime(); core.wait(0.15)
-                return True, rt
+                rt = clock.getTime()
+                core.wait(0.15)
+                return True, rt, speed_violation
             if false_btn.contains(mouse):
-                rt = clock.getTime(); core.wait(0.15)
-                return False, rt
-        core.wait(0.01)
+                rt = clock.getTime()
+                core.wait(0.15)
+                return False, rt, speed_violation
 
-# Letter presentation (persistent accuracy)
+        core.wait(0.01)
 
 def present_letter(letter, vis_correct, vis_total):
     t0 = core.getTime()
@@ -209,8 +243,6 @@ def present_letter(letter, vis_correct, vis_total):
         msg.draw()
         draw_accuracy_counts(vis_correct, vis_total)
         win.flip()
-
-# Recall screen (shows accuracy for this set)
 
 def recall_screen(set_size, vis_correct, vis_total):
     grid = build_letter_grid(win, LETTER_SET)
@@ -225,20 +257,30 @@ def recall_screen(set_size, vis_correct, vis_total):
         msg_small.text = f"Select the letters in the order they were presented (remaining: {set_size - len(recalled)})"
         msg_small.pos = (0, 300)
         msg_small.draw()
+
         draw_accuracy_counts(vis_correct, vis_total)
-        for b in grid: b.draw()
-        for b in [blank_btn, clear_btn, exit_btn]: b.draw()
+
+        for b in grid:
+            b.draw()
+        for b in [blank_btn, clear_btn, exit_btn]:
+            b.draw()
+
         curr = "".join([c if c is not None else "_" for c in recalled])
         msg.text = curr
-        msg.pos = (0, 200); msg.draw(); msg.pos = (0, 0)
+        msg.pos = (0, 200)
+        msg.draw()
+        msg.pos = (0, 0)
+
         win.flip()
 
         if mouse.getPressed()[0]:
             if blank_btn.contains(mouse):
-                if len(recalled) < set_size: recalled.append(None)
+                if len(recalled) < set_size:
+                    recalled.append(None)
                 core.wait(0.15)
             elif clear_btn.contains(mouse):
-                recalled = []; core.wait(0.15)
+                recalled = []
+                core.wait(0.15)
             elif exit_btn.contains(mouse):
                 break
             else:
@@ -248,6 +290,7 @@ def recall_screen(set_size, vis_correct, vis_total):
                             recalled.append(LETTER_SET[i])
                         core.wait(0.15)
                         break
+
         if len(recalled) >= set_size:
             break
         core.wait(0.01)
@@ -256,21 +299,21 @@ def recall_screen(set_size, vis_correct, vis_total):
         recalled.append(None)
     return recalled
 
-# Feedback screen
-
 def feedback_screen(n_correct_in_set, set_size, math_errors_in_set):
     t_end = core.getTime() + FEEDBACK_DURATION
     while core.getTime() < t_end:
         check_escape()
-        msg.text = f"You recalled {n_correct_in_set} / {set_size} letters correctly\nMath errors in this set: {math_errors_in_set}"
+        msg.text = (
+            f"You recalled {n_correct_in_set} / {set_size} letters correctly\n"
+            f"Math errors in this set: {math_errors_in_set}"
+        )
         msg.draw()
         win.flip()
 
 # =========================
 # Scoring & Saving
 # =========================
-
-def compute_scores(trials_by_set, letters_presented_by_set, recalls_by_set, math_accuracy_errors_by_set, timeouts_by_set):
+def compute_scores(trials_by_set, letters_presented_by_set, recalls_by_set, math_accuracy_errors_by_set, speed_errors_by_set):
     total_correct = 0
     absolute_score = 0
     math_accuracy_errors = 0
@@ -284,7 +327,7 @@ def compute_scores(trials_by_set, letters_presented_by_set, recalls_by_set, math
         if correct_positions == set_size:
             absolute_score += set_size
         math_accuracy_errors += math_accuracy_errors_by_set[s]
-        math_speed_errors += timeouts_by_set[s]
+        math_speed_errors += speed_errors_by_set[s]
 
     math_total = sum(trials_by_set)
     math_correct = math_total - (math_accuracy_errors + math_speed_errors)
@@ -293,14 +336,12 @@ def compute_scores(trials_by_set, letters_presented_by_set, recalls_by_set, math
     return dict(
         ospan_absolute=absolute_score,
         total_correct=total_correct,
-        math_errors=math_accuracy_errors+math_speed_errors,
+        math_errors=math_accuracy_errors + math_speed_errors,
         speed_errors=math_speed_errors,
         accuracy_errors=math_accuracy_errors,
         math_accuracy_rate=math_accuracy_rate,
         math_total=math_total
     )
-
-# CSV writers (utf-8-sig for Excel)
 
 def save_triallog(trial_rows, path):
     fieldnames = [
@@ -314,7 +355,6 @@ def save_triallog(trial_rows, path):
         for row in trial_rows:
             writer.writerow(row)
 
-
 def save_summary(summary_dict, path):
     fieldnames = list(summary_dict.keys())
     with open(path, 'w', newline='', encoding='utf-8-sig') as f:
@@ -326,22 +366,32 @@ def save_summary(summary_dict, path):
 # Instructions
 # =========================
 show_instructions(
-    "Welcome!\n\nThis task repeats two steps: (1) quickly solve a math problem, and (2) a letter to remember.\nAfter a few of these, you'll select the letters in the exact order they appeared.\n\nPlease work quickly and accurately on the math.")
+    "Welcome!\n\nThis task repeats two steps: (1) quickly solve a math problem, and (2) a letter to remember.\n"
+    "After a few of these, you'll select the letters in the exact order they appeared.\n\n"
+    "Please work quickly and accurately on the math."
+)
 
+# =========================
 # Practice 1: Letters only
+# =========================
 show_instructions(
-    "Practice 1: Letter recall\n\nYou'll see a sequence of letters flashing briefly one by one (each 800 ms). Then you'll click the letters displayed in a matrix in the same order they appeared."
+    "Practice 1: Letter recall\n\nYou'll see a sequence of letters flashing briefly one by one (each 800 ms). "
+    "Then you'll click the letters displayed in a matrix in the same order they appeared."
 )
 letters_prac = random.sample(LETTER_SET, 2)
 for L in letters_prac:
-    present_letter(L, vis_correct=0, vis_total=0)  # shows 100% by design when total==0
+    present_letter(L, vis_correct=0, vis_total=0)  # shows 100% when total==0
 recall = recall_screen(set_size=2, vis_correct=0, vis_total=0)
 correct_positions = sum(1 for i in range(2) if recall[i] == letters_prac[i])
 feedback_screen(correct_positions, 2, math_errors_in_set=0)
 
-# Practice 2: Math only — estimate individual pace
+# =========================
+# Practice 2: Math only — estimate pace
+# =========================
 show_instructions(
-    "Practice 2: Math judgment\n\nFirst you'll see a math problem — solve it in your head and click to continue. Then you'll see a proposed answer — click TRUE or FALSE.\nWe'll use your practice speed to set a reasonable pace for the main task."
+    "Practice 2: Math judgment\n\nFirst you'll see a math problem — solve it in your head and click to continue. "
+    "Then you'll see a proposed answer — click TRUE or FALSE.\n"
+    "We'll use your practice speed to set a reasonable pace for the main task."
 )
 
 math_problem_rts = []
@@ -352,72 +402,110 @@ prac_total = 0
 for i in range(MATH_PRACTICE_TRIALS):
     prob, correct, shown, is_true = gen_math_problem()
     rt_prob = math_problem_screen(prob, prac_correct, prac_total)
-    resp_true, rt_ans = math_answer_screen(shown, time_limit=None, vis_correct=prac_correct, vis_total=prac_total)
-    if resp_true is not None:
+
+    # no speed limit in practice-2 baseline
+    resp_true, rt_ans, _speed_violation = math_answer_screen(
+        shown, time_limit=None,
+        vis_correct=prac_correct, vis_total=prac_total,
+        hard_max_time=HARD_MAX_JUDGEMENT_TIME
+    )
+
+    # If hard cap is enabled and hit (resp_true None), treat as incorrect + speed error-like
+    if resp_true is None:
+        prac_total += 1
+    else:
         prac_total += 1
         if resp_true == is_true:
             prac_correct += 1
+
     math_problem_rts.append(rt_prob)
     math_answer_rts.append(rt_ans if rt_ans is not None else 0.0)
 
 combo_rts = [p + a for p, a in zip(math_problem_rts, math_answer_rts)]
 rt_mean = float(np.mean(combo_rts)) if combo_rts else 3.0
 rt_sd = float(np.std(combo_rts, ddof=1)) if len(combo_rts) > 1 else 1.0
-PERSONAL_TIME_LIMIT = rt_mean + 2.5*rt_sd
+PERSONAL_TIME_LIMIT = rt_mean + 2.5 * rt_sd
 
+# =========================
 # Practice 3: Combined practice (3 sets of size 2)
+# =========================
 show_instructions(
-    "Practice 3: Combined task (math + letters) \n\nNow it all comes together: math problem → answer judgement → letter display. You need to judge the answer for the math problem correctly and quickly, and also remember the letter in order.\n\n At the end, you'll click the letters displayed in a matrix in the same order they appeared. You'll do 3 short sets of size 2."
+    "Practice 3: Combined task (math + letters)\n\nNow it all comes together: "
+    "math problem → answer judgement → letter display.\n"
+    "Speed errors will be recorded if you are slower than your practice pace, "
+    "but you will still be allowed to finish the judgement.\n\n"
+    "At the end, you'll click the letters displayed in a matrix in the same order they appeared. "
+    "You'll do 3 short sets of size 2."
 )
 
-combined_practice_sets = [2,2,2]
+combined_practice_sets = [2, 2, 2]
 
 trial_rows = []
 set_counter = 0
-running_math_correct = 0  # global (across sets) — used for final summary only
+running_math_correct = 0
 running_math_total = 0
 
 for set_size in combined_practice_sets:
     set_counter += 1
-    # Reset visible accuracy to 100% at start of set
+
+    # visible per-set math accuracy
     set_correct = 0
     set_total = 0
 
     letters_seq = random.sample(LETTER_SET, set_size)
     acc_errors = 0
     speed_errors = 0
+
     for t in range(set_size):
         prob, correct, shown, is_true = gen_math_problem()
         rt_prob = math_problem_screen(prob, set_correct, set_total)
+
         time_left = max(0.0, PERSONAL_TIME_LIMIT - rt_prob)
-        resp_true, rt_ans = math_answer_screen(shown, time_limit=time_left, vis_correct=set_correct, vis_total=set_total)
-        timeout = False
-        resp_correct = False
+
+        resp_true, rt_ans, speed_violation = math_answer_screen(
+            shown, time_limit=time_left,
+            vis_correct=set_correct, vis_total=set_total,
+            hard_max_time=HARD_MAX_JUDGEMENT_TIME
+        )
+
+        # If hard cap hit: treat as a speed error + incorrect judgement
         if resp_true is None:
-            timeout = True
-            speed_errors += 1
+            speed_violation = True
+            resp_correct = False
         else:
             resp_correct = (resp_true == is_true)
-            set_total += 1
-            running_math_total += 1
-            if not resp_correct:
-                acc_errors += 1
-            else:
-                set_correct += 1
-                running_math_correct += 1
+
+        # record speed error (but do not skip judgement)
+        if speed_violation:
+            speed_errors += 1
+
+        # count judgement as completed (even if slow)
+        set_total += 1
+        running_math_total += 1
+
+        if not resp_correct:
+            acc_errors += 1
+        else:
+            set_correct += 1
+            running_math_correct += 1
+
         present_letter(letters_seq[t], set_correct, set_total)
+
         trial_rows.append(dict(
             block_type='practice_combined', set_index=set_counter,
             set_size=set_size, trial_in_set=t+1,
             problem_text=str(prob), shown_answer=shown, is_true_display=is_true, resp_true=resp_true,
-            resp_correct=resp_correct, timeout=timeout, rt_problem=rt_prob, rt_answer=rt_ans,
+            resp_correct=resp_correct,
+            timeout=speed_violation,  # reuse field: now means "speed error"
+            rt_problem=rt_prob, rt_answer=rt_ans,
             letter=letters_seq[t], letter_position=t+1, letter_shown=True,
             recall_letter='', recall_click_index=''
         ))
-    # Recall shows per-set accuracy (100% if no answers)
+
     recalled = recall_screen(set_size, vis_correct=set_correct, vis_total=set_total)
     correct_positions = sum(1 for i in range(set_size) if recalled[i] == letters_seq[i])
     feedback_screen(correct_positions, set_size, acc_errors + speed_errors)
+
     for i in range(set_size):
         trial_rows.append(dict(
             block_type='practice_combined_recall', set_index=set_counter,
@@ -431,12 +519,13 @@ for set_size in combined_practice_sets:
 # =========================
 # Main experiment
 # =========================
-# Reset global counters (summary only)
 running_math_correct = 0
 running_math_total = 0
 
 show_instructions(
-    "Main task\n\nYou'll complete 15 combined task (math problem → answer judgement → letter display).\n\nNote: You should not make any mistake in math problem or be significantly slower then you did in the practice trial, trading for better remembering the letter sequence. Any violation will result in 0 score for the particular set."
+    "Main task\n\nYou'll complete combined sets (math problem → answer judgement → letter display).\n\n"
+    "Important: Speed errors will be recorded if you are slower than your practice pace, "
+    "but you will NOT be skipped past the TRUE/FALSE judgement."
 )
 
 all_set_sizes = [s for s in SET_SIZES for _ in range(SETS_PER_SIZE)]
@@ -446,45 +535,59 @@ letters_presented_by_set = []
 recalls_by_set = []
 trials_by_set = []
 math_accuracy_errors_by_set = []
-timeouts_by_set = []
+speed_errors_by_set = []
 
 for set_idx, set_size in enumerate(all_set_sizes, start=1):
-    # Reset visible accuracy to 100% for this set
     set_correct = 0
     set_total = 0
 
     letters_seq = random.sample(LETTER_SET, set_size)
     acc_errors = 0
     speed_errors = 0
+
     for t in range(set_size):
         prob, correct, shown, is_true = gen_math_problem()
         rt_prob = math_problem_screen(prob, set_correct, set_total)
+
         time_left = max(0.0, PERSONAL_TIME_LIMIT - rt_prob)
-        resp_true, rt_ans = math_answer_screen(shown, time_limit=time_left, vis_correct=set_correct, vis_total=set_total)
-        timeout = False
-        resp_correct = False
+
+        resp_true, rt_ans, speed_violation = math_answer_screen(
+            shown, time_limit=time_left,
+            vis_correct=set_correct, vis_total=set_total,
+            hard_max_time=HARD_MAX_JUDGEMENT_TIME
+        )
+
         if resp_true is None:
-            timeout = True
-            speed_errors += 1
+            speed_violation = True
+            resp_correct = False
         else:
             resp_correct = (resp_true == is_true)
-            set_total += 1
-            running_math_total += 1
-            if not resp_correct:
-                acc_errors += 1
-            else:
-                set_correct += 1
-                running_math_correct += 1
+
+        if speed_violation:
+            speed_errors += 1
+
+        set_total += 1
+        running_math_total += 1
+
+        if not resp_correct:
+            acc_errors += 1
+        else:
+            set_correct += 1
+            running_math_correct += 1
+
         present_letter(letters_seq[t], set_correct, set_total)
+
         trial_rows.append(dict(
             block_type='main', set_index=set_idx,
             set_size=set_size, trial_in_set=t+1,
             problem_text=str(prob), shown_answer=shown, is_true_display=is_true, resp_true=resp_true,
-            resp_correct=resp_correct, timeout=timeout, rt_problem=rt_prob, rt_answer=rt_ans,
+            resp_correct=resp_correct,
+            timeout=speed_violation,  # reuse field: now means "speed error"
+            rt_problem=rt_prob, rt_answer=rt_ans,
             letter=letters_seq[t], letter_position=t+1, letter_shown=True,
             recall_letter='', recall_click_index=''
         ))
-    # Recall shows per-set accuracy
+
     recalled = recall_screen(set_size, vis_correct=set_correct, vis_total=set_total)
     correct_positions = sum(1 for i in range(set_size) if recalled[i] == letters_seq[i])
     feedback_screen(correct_positions, set_size, acc_errors + speed_errors)
@@ -493,7 +596,7 @@ for set_idx, set_size in enumerate(all_set_sizes, start=1):
     recalls_by_set.append(recalled)
     trials_by_set.append(set_size)
     math_accuracy_errors_by_set.append(acc_errors)
-    timeouts_by_set.append(speed_errors)
+    speed_errors_by_set.append(speed_errors)
 
     for i in range(set_size):
         trial_rows.append(dict(
@@ -510,7 +613,7 @@ for set_idx, set_size in enumerate(all_set_sizes, start=1):
 # =========================
 summary = compute_scores(
     trials_by_set, letters_presented_by_set, recalls_by_set,
-    math_accuracy_errors_by_set, timeouts_by_set
+    math_accuracy_errors_by_set, speed_errors_by_set
 )
 summary.update(dict(
     personal_time_limit=PERSONAL_TIME_LIMIT,
@@ -519,12 +622,13 @@ summary.update(dict(
 save_triallog(trial_rows, triallog_path)
 save_summary(summary, summary_path)
 
-# Final message
-include_text = "included" if summary['math_accuracy_rate'] >= ACCURACY_CRITERION else "EXCLUDED (math accuracy < 85%)"
 show_instructions(
-    f"Task complete.\n\nOSPAN absolute: {summary['ospan_absolute']}\nTotal correct (position): {summary['total_correct']}\nMath accuracy: {summary['math_accuracy_rate']*100:.1f}%\nSpeed errors: {summary['speed_errors']}\nAccuracy errors: {summary['accuracy_errors']}\n\nParticipant status: {include_text}."
+    f"Task complete.\n\n"
+    f"OSPAN absolute: {summary['ospan_absolute']}\n"
+    f"Total correct (position): {summary['total_correct']}\n"
+    f"Math accuracy: {summary['math_accuracy_rate']*100:.1f}%\n"
+    f"Speed errors: {summary['speed_errors']}\n"
 )
 
 win.close()
 core.quit()
-#exlib.stopExp(sid,hz,resX,resY,seed,dbConf)
