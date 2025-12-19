@@ -393,13 +393,12 @@ average_rt_display_sec = (sum(all_rts) / len(all_rts)) if len(all_rts) > 0 else 
 summary = dict(
     abs_perfect_sum=abs_perfect_sum,
     total_correct_positions=total_correct_positions,
-    average_rt_display_sec=round(average_rt_display_sec, 3)  # 秒
+    average_rt_display =round(average_rt_display_sec, 3)  # 秒
 )
 
 save_triallog(trial_rows, triallog_path)
 save_summary(summary, summary_path)
 
-# 如果你想显示 ms：
 average_rt_display_ms = average_rt_display_sec * 1000.0
 
 show_instructions(
