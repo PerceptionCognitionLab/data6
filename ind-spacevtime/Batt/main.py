@@ -16,7 +16,7 @@ sys.path.insert(0, 'E:/data6/ind-spacevtime/TGabor/')
 from TGabor import runTG
 sys.path.insert(0, 'E:/data6/ind-spacevtime/TLetter/')
 from TLetter import runTL
-sys.path.insert(0, 'E:/data6/ind-spacevtime/TPi/')
+sys.path.insert(0, 'E:/data6/ind-spacevtime/TPi/') 
 from TPi import runTP
 
 seed = random.randrange(1e6)
