@@ -16,6 +16,8 @@ UNITS = "pix"
 BG_COLOR = (0, 0, 0)
 
 FIELD_W, FIELD_H = 900, 600
+
+
 DOT_RADIUS = 14
 DOT_MIN_DIST = 2 * DOT_RADIUS + 6
 
