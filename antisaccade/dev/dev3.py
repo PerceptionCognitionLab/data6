@@ -16,7 +16,7 @@ pid=1
 sid=1
 fname="test"
 
-#expName="dev3"
+#expName="dev3" mj jjkk99999jkl;  jj99
 refreshRate=165
 seed= -1
 
@@ -174,103 +174,144 @@ def txt(blk):
         text.draw()
         win.flip()
         event.waitKeys()
-
+        
     if (blk==2):
-        text=visual.TextStim(win,"Feeling ready? \n\nNow we will start the experiment blocks. " \
-                            "\n\nPress a key to continue.",height=30) 
+        text=visual.TextStim(win, "Nice job!\n That's what the objects in the experiment will look like." \
+                             "\n\nNow we will do another practice, a little faster this time." \
+                                 "\n\n\nPress any key to continue", height = 30)
+        text.draw()
+        win.flip()
+        event.waitKeys()
+        
+    if (blk==3):
+        text=visual.TextStim(win, "Great work! It's OK if it feels harder as it gets faster." \
+                             "\n\nNow, we'll practice again, but the letter will be in the box opposite the cue." \
+                             "\n\n\nPress any key to continue", height =30)
+        text.draw()
+        win.flip()
+        event.waitKeys()
+        
+    if (blk==4):
+        text=visual.TextStim(win, "Great job!\n\nThe last set of practice will be at the same speed as the experiment," \
+                             "which is a little faster than before.\n\n\nPress any key to continue", height=30)
+        text.draw()
+        win.flip()
+        event.waitKeys()
+
+    if (blk==6):
+        text=visual.TextStim(win,"Feeling ready? \n\nNow we will start the experiment blocks." \
+                             "\n\nYou may take breaks between blocks. Remember to stay focused and do your best." \
+                            "\n\n\nPress a key to start the experiment  ",height=30) 
         text.draw()
         win.flip()
         event.waitKeys()  
 
 
 
-#def prac1():
-#    prac1=visual.TextStim(win,"In this experiemnt, you will see two squares on either side of the screen." \
-#                          " One of the squares will light up (the cue). Then a letter (the target) will appear in either the same square" \
-#                            " or the opposite square. Your job is to type what the letter was." \
-#                            "\n\n\nFirst, let's see what it looks like when the cue and the target are on the same side." \
-#                            "\n\n\nPress any key to continue", height=30)
-#    prac1.draw()
-#    win.flip()
-#    event.waitKeys()
-
-#def prac2():
-#    prac2=visual.TextStim(win,"Great job!\n\n\nNext, let's see what it looks like when the cue and the target are on opposite sides." \
-#                            "\n\n\nPress any key to continue", height=30)
-#    prac2.draw()
-#    win.flip()
-#    event.waitKeys()
-
-#def startExp():
-#    message=visual.TextStim(win,"Feeling ready? \n\nNow we will start the experiment blocks. " \
-#                            "\n\nPress a key to continue.",height=30)
-#    message.draw()
-#    win.flip()
-#    event.waitKeys()
-
-
-
-
-
-
+########################
+#### RUN EXPERIMENT ####
+########################
 
 intro()
-#PRACTICE BLOCKS
-last=[90,70]
 
-#Block 0 - congruent practice 1 (slow)
-#prac1()
-cong=1
+#########################
+#### PRACTICE BLOCKS ####
+#########################
+
+last=[90,70]
 nTrials=5
 increment=5
-lPar.dur=[50,12,last[cong],20,16,16]
-last[cong]=runBlock(0,cong,nTrials,increment)
+#Block 0 - congruent practice 1 (slow)
+blk=0
+cong=1
+lPar.dur=[60,12,last[cong],22,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
 
 #Block 1 - incongruent practice (slow)
-#prac2()
+blk=1
 cong=0
+lPar.dur=[60,12,last[cong],22,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
+
+
+last=[75,55]
+nTrials=10
+increment=2
+#Block 2 - congruent practice (slighely faster, more trials)
+blk=2
+cong=1
+lPar.dur=[60,6,last[cong],19,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
+
+#Block 3 - incongruent practice (slightly faster, more trials)
+blk=3
+cong=0
+lPar.dur=[60,6,last[cong],19,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
+
+
+last=[60,40]
+nTrials=15
+increment=5
+#Block 4 - congrent practice (at speed)
+blk=4
+cong=1
+lPar.dur=[60,2,last[cong],16,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
+
+#Block 5 - incongruent practice (at speed)
+blk=5
+cong=0
+lPar.dur=[60,2,last[cong],16,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
+
+
+
+#############################
+#### EXPERIMENTAL BLOCKS ####
+#############################
+
+#startExp()
+last=[60,40]
 nTrials=5
 increment=5
-lPar.dur=[50,12,last[cong],20,16,16]
-last[cong]=runBlock(1,cong,nTrials,increment)
-
-
-
-#EXPERIMENTAL BLOCKS
-#startExp()
-last=[60,40]                                       #variables consistent across blocks (or changed in another block)
-nTrials=10
-increment=5
-#Block 2 - congruent 1
+#Block 6 - congruent 1
+blk=6
 cong=1
-lPar.dur=[50,2,last[cong],16,16,16]
-last[cong]=runBlock(2,cong,nTrials,increment)
+lPar.dur=[60,2,last[cong],16,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
 
-#Block 3 - incongruent 2
+#Block 7 - incongruent 2
+blk=7
 cong=0
-lPar.dur=[50,2,last[cong],16,16,16]
-last[cong]=runBlock(3,cong,nTrials,increment)
+lPar.dur=[60,2,last[cong],16,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
 
-#Block 4 - congruent 2
-increment=2                                         #decreasing increment
+increment=2                                             #decreasing increment
+#Block 8 - congruent 2
+blk=8
 cong=1
-lPar.dur=[50,2,last[cong],16,16,16]
-last[cong]=runBlock(4,cong,nTrials,increment)
+lPar.dur=[60,2,last[cong],16,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
 
-#Block 5 -incongruent 2
+#Block 9 -incongruent 2
+blk=9
 cong=0
-lPar.dur=[50,2,last[cong],16,16,16]
-last[cong]=runBlock(5,cong,nTrials,increment)
+lPar.dur=[60,2,last[cong],16,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
 
-#Block 6 - incongruent 3
+increment=1                                             #decreasing increment
+#Block 10 - incongruent 3
+blk=10
 cong=0
-lPar.dur=[50,2,last[cong],16,16,16]
-last[cong]=runBlock(6,cong,nTrials,increment)
+lPar.dur=[60,2,last[cong],16,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
 
-#Block 7 - congruent 3
+#Block 11 - congruent 3
+blk=11
 cong=1
-lPar.dur=[50,2,last[cong],16,16,16]
-last[cong]=runBlock(7,cong,nTrials,increment)
+lPar.dur=[60,2,last[cong],16,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
 
 
 
