@@ -22,7 +22,7 @@ seed= -1
 
 dbConf=el.beta
 #el.setRefreshRate(refreshRate)
-#[pid,sid,fname]=el.startExp(expName,dbConf,pool=1,lockBox=False,refreshRate=refreshRate)
+#[pid,sid,fname]=el.startExp(e      wxpName,dbConf,pool=1,lockBox=False,refreshRate=refreshRate)
 
 fptr=open(fname,"w")
 rng = random.default_rng()
@@ -30,10 +30,10 @@ rng = random.default_rng()
 scale=400
 
 trialClock=core.Clock()
-correctSound1 = sound.Sound(500, secs=0.25)
-correctSound2 = sound.Sound(1000, secs=0.25)
-errorSound1 = sound.Sound(500, secs=0.5)
-errorSound2 = sound.Sound(375, secs=0.5)
+correctSound1 = sound.Sound(800, secs=0.15)
+correctSound2 = sound.Sound(1200, secs=0.15)
+errorSound1 = sound.Sound(500, secs=0.30)
+errorSound2 = sound.Sound(375, secs=0.30)
 
 win=visual.Window(units= "pix", 
                      allowGUI=False,
@@ -130,8 +130,8 @@ def runBlock(blk,cong,nTrials,increment):
             numCor+=1
         elif (resp==lPar.target)&(numCor==1):
             lPar.dur[targDur] = lPar.dur[targDur]-increment
-            if lPar.dur[targDur]<0:
-                lPar.dur[targDur]=0
+            if lPar.dur[targDur]<1:
+                lPar.dur[targDur]=1
             numCor=0
         else:
             lPar.dur[targDur]=lPar.dur[targDur]+increment
@@ -252,7 +252,7 @@ last[cong]=runBlock(blk,cong,nTrials,increment)
 
 last=[60,40]
 nTrials=15
-increment=5
+increment=2
 #Block 4 - congrent practice (at speed)
 blk=4
 cong=1
@@ -273,7 +273,7 @@ last[cong]=runBlock(blk,cong,nTrials,increment)
 
 #startExp()
 last=[60,40]
-nTrials=5
+nTrials=30
 increment=5
 #Block 6 - congruent 1
 blk=6
@@ -286,8 +286,8 @@ blk=7
 cong=0
 lPar.dur=[60,2,last[cong],16,16,16]
 last[cong]=runBlock(blk,cong,nTrials,increment)
-
-increment=2                                             #decreasing increment
+                                             
+increment=2
 #Block 8 - congruent 2
 blk=8
 cong=1
@@ -318,7 +318,7 @@ last[cong]=runBlock(blk,cong,nTrials,increment)
 #hz=round(win.getActualFrameRate())
 #[resX,resY]=win.size
 win.close()
-fptr.close
-#el.stopExp(sid,hz,resX,resY,seed,dbConf)
+fptr.close()
+#el.st  opExp(sid,hz,resX,resY,seed,dbConf)
 core.quit()
 
