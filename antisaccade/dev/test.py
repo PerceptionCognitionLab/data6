@@ -12,6 +12,15 @@ sys.path.insert(0, 'E:/lib/data6')
 import expLib61 as el
 from types import SimpleNamespace
 
+import psutil, os
+
+process = psutil.Process(os.getpid())
+
+def log_ram(i):
+    mem = process.memory_info().rss / 1024**2
+    print(f"Trial {i}: RAM = {mem:.1f} MB")
+    
+    
 pid=1
 sid=1
 fname="test"
@@ -62,13 +71,47 @@ fixR=visual.Rect(win,pos=gPar.pos[1],fillColor=(-1,-1,-1),lineColor=(0,0,0),line
 cXLR=visual.BufferImageStim(win,stim=(fixX,fixL,fixR))
 box=[fixL,fixR]
 
-def createStim():
-    targ=visual.TextStim(win, gPar.let[lPar.target],pos=gPar.pos[lPar.posTarg])
-    mask1=visual.TextStim(win, gPar.mask[0],pos=gPar.pos[lPar.posTarg])
-    mask2=visual.TextStim(win, gPar.mask[1],pos=gPar.pos[lPar.posTarg])
-    return fixX,fixL,fixR,cXLR,box,targ,mask1,mask2
+
+targ=visual.TextStim(win, gPar.let[lPar.target],pos=gPar.pos[lPar.posTarg])
+mask1=visual.TextStim(win, gPar.mask[0],pos=gPar.pos[lPar.posTarg])
+mask2=visual.TextStim(win, gPar.mask[1],pos=gPar.pos[lPar.posTarg])
+    
+    
+def runTrial(frames):
+    
+    if lPar.isCongruent==1:
+        posCue=lPar.posTarg
+    else:
+        posCue=1-lPar.posTarg
+    box[posCue].lineColor=[1,1,1]
+    box[posCue].lineWidth=10
+    box[posCue].lineColor=[0,0,0]
+    box[posCue].lineWidth=2
+    stamps=el.runFrames(win,frames,lPar.dur,trialClock)
+    return
 
 
+def intro():
+    messageIntro=visual.TextStim(win,"Welcome to the experiment! \n\n We will start with some practice blocks." \
+                                "\n\n Press any key to begin.",height=30)
+    messageIntro.draw()
+    win.flip()
+    event.waitKeys()
+     
+intro()  
+lPar.dur = [1,1,1,1,1,1]
+
+ 
+a = visual.BufferImageStim(win,stim=box+[fixX])
+b = visual.BufferImageStim(win,stim=(fixX,fixL,fixR,targ))
+c = visual.BufferImageStim(win,stim=(fixX,fixL,fixR,mask1))
+d = visual.BufferImageStim(win,stim=(fixX,fixL,fixR,mask2))
+for i in range(500):
+    frames = [cXLR, a, cXLR, b, c, d]
+    runTrial(frames)
+    log_ram(i)
+win.close()
+'''
 def getResp():
     keys=event.getKeys(keyList=gPar.keyList,timeStamped=trialClock)
     if len(keys)==0:
@@ -323,3 +366,4 @@ fptr.close()
 #el.st  opExp(sid,hz,resX,resY,seed,dbConf)
 core.quit()
 
+'''

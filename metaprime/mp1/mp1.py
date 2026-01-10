@@ -50,7 +50,7 @@ start_practice_text = visual.TextStim(win, text='We will begin with some practic
 end_practice_text = visual.TextStim(win, text='Practice finished.\n\nPress space to start the real experiment.', pos=(0, 0), color=sti_color)
 # Fixation and blank
 fixation = visual.TextStim(win, text='+', pos=(0, 0), color=sti_color, bold = True, height = 40)
-
+blank =  visual.TextStim(win, text='', pos=(0, 0), color=sti_color, bold = True, height = 40)
 # contour not touch
 
 prime_left = visual.ShapeStim(
@@ -60,16 +60,36 @@ prime_right = visual.ShapeStim(
     win=win, vertices=[(-60,0),(-80,20),(70,20),(90,0),(70,-20),(-80,-20)],
     fillColor=sti_color, lineColor=sti_color, size=1)
 
-mask_left = visual.ShapeStim(
+prime_left_bottom = visual.ShapeStim(
+    win=win, vertices=[(-90,0),(-70,20),(80,20),(60,0),(80,-20),(-70,-20)],
+    fillColor=sti_color, lineColor=sti_color, size=1,  pos = (0, -130))
+prime_right_bottom = visual.ShapeStim(
+    win=win, vertices=[(-60,0),(-80,20),(70,20),(90,0),(70,-20),(-80,-20)],
+    fillColor=sti_color, lineColor=sti_color, size=1,  pos = (0, -130))
+
+prime_left_top = visual.ShapeStim(
+    win=win, vertices=[(-90,0),(-70,20),(80,20),(60,0),(80,-20),(-70,-20)],
+    fillColor=sti_color, lineColor=sti_color, size=1,  pos = (0, 130))
+prime_right_top = visual.ShapeStim(
+    win=win, vertices=[(-60,0),(-80,20),(70,20),(90,0),(70,-20),(-80,-20)],
+    fillColor=sti_color, lineColor=sti_color, size=1,  pos = (0, 130))
+
+mask_outer_left = visual.ShapeStim(
     win=win, vertices=[(-165, 0), (-120, 45), (120, 45), (120, -45), (-120, -45)],
     fillColor=sti_color , lineColor=sti_color , size=1)
-mask_right = visual.ShapeStim(
+mask_outer_right = visual.ShapeStim(
     win=win, vertices=[(-120, 45), (120, 45), (165,0), (120, -45), (-120, -45)],
     fillColor=sti_color , lineColor=sti_color , size=1)
 mask_inner = visual.ShapeStim(
     win=win, vertices=[(-105,30),(105,30),(90,15),(105,0),(90,-15),(105,-30),(-105,-30),(-90,-15),(-105,0),(-90,15)],
     fillColor=bg_color, lineColor=bg_color, size=1)
 #endregion
+
+
+mask_left_bottom = visual.BufferImageStim(win, stim=[mask_outer_left, mask_inner], pos = (0, -130))
+mask_right_bottom = visual.BufferImageStim(win, stim=[mask_outer_right, mask_inner], pos = (0, -130))
+mask_left_top = visual.BufferImageStim(win, stim=[mask_outer_left, mask_inner], pos = (0, 130))
+mask_right_top = visual.BufferImageStim(win, stim=[mask_outer_right, mask_inner], pos = (0, 130))
 
 # Define a function for a single trial
 def run_trial(block_num, trial_num, prime_direction, mask_direction, ISI, position, provide_feedback=False, goal = None): 
@@ -79,27 +99,30 @@ def run_trial(block_num, trial_num, prime_direction, mask_direction, ISI, positi
     else:
         true = prime_direction
     # Set the orientation of the prime used in this trial
-    prime = prime_left if prime_direction == 'left' else prime_right
-    mask_outer = mask_left if mask_direction == 'left' else mask_right
-    
-    # Set position for both prime and mask either at top or bottom of the fixation points
-    pos = (0, 130) if position == 'top' else (0, -130)
-    prime.pos = pos
-    mask_outer.pos = pos
-    mask_inner.pos = pos
+    if position == 'top':
+        if prime_direction == 'left':
+            prime = prime_left_top
+        else:
+            prime = prime_right_top
+            
+        if mask_direction == 'left':
+            mask = mask_left_top
+        else:
+            mask = mask_right_top
+    else:
+        if prime_direction == 'left':
+            prime = prime_left_bottom
+        else:
+            prime = prime_right_bottom
 
-    # Include fixation and wait text point to the prime
-    prime = visual.BufferImageStim(win, stim=[prime, fixation])
-
-    # Combine the two components of the mask and fixation and wait text together
-    mask = visual.BufferImageStim(win, stim=[mask_outer, mask_inner, fixation])
-    
-    # Wait screen
-    wait = visual.BufferImageStim(win, stim=[fixation])
-
+        if mask_direction == 'left':
+            mask = mask_left_bottom
+        else:
+            mask = mask_right_bottom
+            
     # Run frames
     if ISI != 0:
-        frames = [wait, prime, wait, mask]
+        frames = [fixation, prime, blank, mask]
         frameDurations = [120, primeFrame, ISI, maskFrame]
         stamps = exlib.runFrames(win, frames, frameDurations, trialClock)
         critTime = exlib.actualFrameDurations(frameDurations, stamps)[2]
@@ -108,13 +131,13 @@ def run_trial(block_num, trial_num, prime_direction, mask_direction, ISI, positi
             print('Critical pass fail at trial ' + str(trial_num) + ' : while critical time is ' + str(np.round(critTime, 4)) +
                   ', actual time is ' + str(np.round(ISI/refreshRate, 4)))
     else:
-        frames = [wait, prime, mask]
+        frames = [fixation, prime, mask]
         frameDurations = [120, primeFrame, maskFrame] 
         stamps = exlib.runFrames(win, frames, frameDurations, trialClock)
 
     # Record the reaction time and wait for response for at most 1.5s
     trialClock.reset()
-    fixation.draw()
+    blank.draw()
     win.flip()
     keys = event.waitKeys(maxWait=5, timeStamped=trialClock, keyList=['x', 'm'])
 
@@ -276,9 +299,9 @@ win.flip()
 event.waitKeys(keyList=['space'])
 
 # instruction1
-mask_left.pos = (0,-300)
+mask_outer_left.pos = (0,-300)
 mask_inner.pos = (0,-300)
-mask_left.draw()
+mask_outer_left.draw()
 mask_inner.draw()
 instruction_text1.draw()
 win.flip()
@@ -294,9 +317,9 @@ event.waitKeys(keyList=['space'])
 
 # instruction2
 prime_right.pos = (0,-300)
-mask_left.pos = (0,-300)
+mask_outer_left.pos = (0,-300)
 mask_inner.pos = (0,-300)
-mask_left.draw()
+mask_outer_left.draw()
 mask_inner.draw()
 instruction_text2.draw()
 prime_right.draw()
