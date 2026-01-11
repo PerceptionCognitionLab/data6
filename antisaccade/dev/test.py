@@ -12,15 +12,7 @@ sys.path.insert(0, 'E:/lib/data6')
 import expLib61 as el
 from types import SimpleNamespace
 
-import psutil, os
 
-process = psutil.Process(os.getpid())
-
-def log_ram(i):
-    mem = process.memory_info().rss / 1024**2
-    print(f"Trial {i}: RAM = {mem:.1f} MB")
-    
-    
 pid=1
 sid=1
 fname="test"
@@ -102,14 +94,14 @@ intro()
 lPar.dur = [1,1,1,1,1,1]
 
  
-a = visual.BufferImageStim(win,stim=box+[fixX])
-b = visual.BufferImageStim(win,stim=(fixX,fixL,fixR,targ))
-c = visual.BufferImageStim(win,stim=(fixX,fixL,fixR,mask1))
-d = visual.BufferImageStim(win,stim=(fixX,fixL,fixR,mask2))
+
 for i in range(500):
+    a = visual.BufferImageStim(win,stim=box+[fixX])
+    b = visual.BufferImageStim(win,stim=(fixX,fixL,fixR,targ))
+    c = visual.BufferImageStim(win,stim=(fixX,fixL,fixR,mask1))
+    d = visual.BufferImageStim(win,stim=(fixX,fixL,fixR,mask2))
     frames = [cXLR, a, cXLR, b, c, d]
     runTrial(frames)
-    log_ram(i)
 win.close()
 '''
 def getResp():
