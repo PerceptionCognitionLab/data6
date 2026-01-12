@@ -80,6 +80,7 @@ def runTrial(frames):
     box[posCue].lineColor=[0,0,0]
     box[posCue].lineWidth=2
     stamps=el.runFrames(win,frames,lPar.dur,trialClock)
+    el.endTrial()
     return
 
 

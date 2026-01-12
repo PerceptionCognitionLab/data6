@@ -60,19 +60,6 @@ prime_right = visual.ShapeStim(
     win=win, vertices=[(-60,0),(-80,20),(70,20),(90,0),(70,-20),(-80,-20)],
     fillColor=sti_color, lineColor=sti_color, size=1)
 
-prime_left_bottom = visual.ShapeStim(
-    win=win, vertices=[(-90,0),(-70,20),(80,20),(60,0),(80,-20),(-70,-20)],
-    fillColor=sti_color, lineColor=sti_color, size=1,  pos = (0, -130))
-prime_right_bottom = visual.ShapeStim(
-    win=win, vertices=[(-60,0),(-80,20),(70,20),(90,0),(70,-20),(-80,-20)],
-    fillColor=sti_color, lineColor=sti_color, size=1,  pos = (0, -130))
-
-prime_left_top = visual.ShapeStim(
-    win=win, vertices=[(-90,0),(-70,20),(80,20),(60,0),(80,-20),(-70,-20)],
-    fillColor=sti_color, lineColor=sti_color, size=1,  pos = (0, 130))
-prime_right_top = visual.ShapeStim(
-    win=win, vertices=[(-60,0),(-80,20),(70,20),(90,0),(70,-20),(-80,-20)],
-    fillColor=sti_color, lineColor=sti_color, size=1,  pos = (0, 130))
 
 mask_outer_left = visual.ShapeStim(
     win=win, vertices=[(-165, 0), (-120, 45), (120, 45), (120, -45), (-120, -45)],
@@ -85,40 +72,20 @@ mask_inner = visual.ShapeStim(
     fillColor=bg_color, lineColor=bg_color, size=1)
 #endregion
 
-
-mask_left_bottom = visual.BufferImageStim(win, stim=[mask_outer_left, mask_inner], pos = (0, -130))
-mask_right_bottom = visual.BufferImageStim(win, stim=[mask_outer_right, mask_inner], pos = (0, -130))
-mask_left_top = visual.BufferImageStim(win, stim=[mask_outer_left, mask_inner], pos = (0, 130))
-mask_right_top = visual.BufferImageStim(win, stim=[mask_outer_right, mask_inner], pos = (0, 130))
-
 # Define a function for a single trial
 def run_trial(block_num, trial_num, prime_direction, mask_direction, ISI, position, provide_feedback=False, goal = None): 
     # Set goal of the trial
-    if goal == 'mask':
-        true = mask_direction
-    else:
-        true = prime_direction
-    # Set the orientation of the prime used in this trial
-    if position == 'top':
-        if prime_direction == 'left':
-            prime = prime_left_top
-        else:
-            prime = prime_right_top
-            
-        if mask_direction == 'left':
-            mask = mask_left_top
-        else:
-            mask = mask_right_top
-    else:
-        if prime_direction == 'left':
-            prime = prime_left_bottom
-        else:
-            prime = prime_right_bottom
+    true = mask_direction  if goal == 'mask' else prime_direction
+    position = (0, 130) if position == 'top' else (0, -130)
 
-        if mask_direction == 'left':
-            mask = mask_left_bottom
-        else:
-            mask = mask_right_bottom
+    prime = prime_left if prime_direction == 'left' else prime_right
+    mask_outer = mask_outer_left if mask_direction == 'left' else mask_outer_right
+        
+    prime.pos = position
+    mask_outer.pos = position
+    mask_inner.pos = position
+        
+    mask = visual.BufferImageStim(win, stim = [mask_outer, mask_inner])
             
     # Run frames
     if ISI != 0:
@@ -180,7 +147,9 @@ def run_trial(block_num, trial_num, prime_direction, mask_direction, ISI, positi
     if provide_feedback == False:
         print(output)
         print(*output, sep=',', file=fptr)
-
+    
+    exlib.endTrial()
+        
 # Define a function for a practice trial
 def run_practice_block(n_trials=practice_num, goal = None):
     # Start the practice block
@@ -335,13 +304,9 @@ win.flip()
 event.waitKeys(keyList=['space'])
 
 # Record settings and close the window
-hz=round(win.getActualFrameRate())
 [resX,resY]=win.size
-exlib.stopExp(sid,hz,resX,resY,seed,dbConf)
-
-win.close()
-# Get everything in the store file and close the file
 fptr.flush()
-# endregion
+win.close()
+core.quit()
 
 
