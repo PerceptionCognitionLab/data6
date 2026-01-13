@@ -16,13 +16,14 @@ pid=1
 sid=1
 fname="test"
 
-#expName="dev3" mj jjkk99999jkl;  jj99
+expName="dev3" 
 refreshRate=165
 seed= -1
 
-dbConf=el.beta
+#dbConf=el.beta
+#dbConf=el.data6
 #el.setRefreshRate(refreshRate)
-#[pid,sid,fname]=el.startExp(e      wxpName,dbConf,pool=1,lockBox=False,refreshRate=refreshRate)
+#[pid,sid,fname]=el.startExp(expName,dbConf,pool=1,lockBox=False,refreshRate=refreshRate)
 
 fptr=open(fname,"w")
 rng = random.default_rng()
@@ -53,7 +54,7 @@ targDur=2
 lParDict={"isCongruent":0,
           "target":0,
           "posTarg":0,          
-          "dur":[50,2,0,16,16,16]}
+          "dur":[60,2,1,16,16,16]}
 lPar = SimpleNamespace(**lParDict)
 
 fixX=visual.TextStim(win,"+", height = 30)
@@ -82,8 +83,29 @@ def getResp():
     resp = gPar.keyList.index(resp)
     return([resp,round(rt,3)])
 
+def getLet():
+    randLet=rng.integers(0,len(gPar.let))
+    letStim=gPar.let[randLet]
+    letter=visual.TextStim(win,text=letStim,height=30)
+    core.wait(0.50)
+    letter.draw()
+    win.flip()
+    
+    [resp,rt]=getResp()
+    if (gPar.let[resp]==letStim):
+        correctSound1.play()
+        correctSound2.play() 
+    else:       
+        errorSound1.play()
+        errorSound2.play()
+    return()
+    
+
+
 def runTrial():
     frames=[]
+
+    getLet()
 
     if lPar.isCongruent==1:
         posCue=lPar.posTarg
@@ -109,7 +131,7 @@ def runTrial():
     else:
         errorSound1.play()
         errorSound2.play()
-
+    el.endTrial()
     return([resp,rt])
     
 
@@ -124,8 +146,6 @@ def runBlock(blk,cong,nTrials,increment):
         lPar.target = int(rng.integers(0,9,1))
         lPar.posTarg = int(rng.integers(0,2,1))  #0=left, 1=right
         [resp,rt]=runTrial()
-        print(pid,sid,blk,trl,lPar.isCongruent,lPar.target,lPar.dur[targDur],resp,rt,sep=", ", file=fptr)
-        print(pid,sid,blk,trl,lPar.isCongruent,lPar.target,lPar.dur[targDur],resp,rt)
     
         if (resp==lPar.target)&(numCor==0):
             numCor+=1
@@ -139,6 +159,11 @@ def runBlock(blk,cong,nTrials,increment):
             numCor=0
 
     return(lPar.dur[targDur])
+
+
+##############
+#### TEXT ####
+##############
 
 def blockStart(blk,cong):
     if (cong==1):
@@ -218,7 +243,7 @@ intro()
 #########################
 #### PRACTICE BLOCKS ####
 #########################
-
+'''
 last=[90,70]
 nTrials=5
 increment=5
@@ -265,7 +290,7 @@ blk=5
 cong=0
 lPar.dur=[60,2,last[cong],16,16,16]
 last[cong]=runBlock(blk,cong,nTrials,increment)
-
+'''
 
 
 #############################
@@ -273,9 +298,9 @@ last[cong]=runBlock(blk,cong,nTrials,increment)
 #############################
 
 #startExp()
-last=[60,40]
-nTrials=60
-increment=5
+last=[60,40]                                            #staircase start
+nTrials=60                                              #number experimental trials
+increment=5                                             #starting increment
 #Block 6 - congruent 1
 blk=6
 cong=1
@@ -288,7 +313,7 @@ cong=0
 lPar.dur=[60,2,last[cong],16,16,16]
 last[cong]=runBlock(blk,cong,nTrials,increment)
                                              
-increment=2
+increment=2                                             #decreasing increment
 #Block 8 - congruent 2
 blk=8
 cong=1
