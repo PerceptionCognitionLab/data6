@@ -1,0 +1,22 @@
+0 6 False
+1 5 False
+2 4 True
+3 4 False
+4 3 True
+0 6 False
+1 5 True
+2 5 True
+3 7 True
+4 7 True
+trialNum dur stim resp
+0 6 1 1
+1 6 0 0
+2 4 1 0
+3 6 1 1
+4 6 0 0
+trialNum dur stim resp
+0 6 0 0
+1 6 0 0
+2 4 1 0
+3 6 0 0
+4 6 1 0
