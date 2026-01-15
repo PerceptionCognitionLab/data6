@@ -411,5 +411,6 @@ show_instructions(
 )
 win.close()
 core.quit()
+exlib.endTrial()
 # exlib.stopExp(sid, hz, resX, resY, seed, dbConf)
 
