@@ -18,9 +18,11 @@ refreshRate=165
 elib.setRefreshRate(refreshRate)
 expName="pm3Test"
 dbConf=elib.beta
-[pid,sid,fname]=elib.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
-#[pid,sid,fname]=[1,1,'test']
+#[pid,sid,fname]=elib.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
+[pid,sid,fname]=[1,1,'test']
 fptr=open(fname,"w")
+header=[ "taskType", "trialNum", "soa", "stim", "resp", "correct"]
+print(*header, sep=' ', file=fptr)
 
 
 win = visual.Window(units="pix", size=(500, 500), color=[-1, -1, -1], fullscr=True)
@@ -50,16 +52,17 @@ int_trial = 3
 
 def runTrial(dur, stimCode):
     stim=[]
-    stim.append(visual.Circle(win, pos=(-136,0.0), fillColor=[1, 1, 1], radius=4))
-    stim.append(visual.Circle(win, pos=(96,0.0), fillColor=[1, 1, 1], radius=4))
+    #stim.append(visual.Circle(win, pos=(-136,0.0), fillColor=[1, 1, 1], radius=4))
+    stim.append(visual.Circle(win, pos=(-96,0.0), fillColor=[1, 1, 1], radius=7.5))
+    stim.append(visual.Circle(win, pos=(96,0.0), fillColor=[1, 1, 1], radius=7.5))
     both=visual.BufferImageStim(win,stim=stim)
     stim.append(both)
     blank = visual.TextStim(win, '', pos = (0.0,0.0))
     option = []
     #option.append(visual.TextBox2(win, text = "Different", size=(1.8,.1), pos=(-120,240)))
     #option.append(visual.TextBox2(win, text = "Same", size=(1.8,.1), pos=(-100,-280)))
-    option.append(visual.TextBox2(win, text = "Different", size=(800,400), pos=(300,240), letterHeight=30))
-    option.append(visual.TextBox2(win, text = "Same", size=(800,400), pos=(330,-280), letterHeight=30))
+    option.append(visual.TextBox2(win, text = "Different", size=(800,400), pos=(330,240), letterHeight=30))
+    option.append(visual.TextBox2(win, text = "Same", size=(800,400), pos=(350,-280), letterHeight=30))
     options=visual.BufferImageStim(win,stim=option)
 
     frames = [fix, blank, stim[stimCode], blank, both, options]
@@ -123,9 +126,6 @@ def integrationTrial(soa,gPar):
 # staircase
 #############
 def runSimult(trialNum, prac=False):
-    if not prac:
-        header=["trialNum", "dur", "stim", "resp"]
-        print(*header, sep=' ', file=fptr)
     counter = 0
     dur = 6
     for i in range(trialNum):
@@ -135,14 +135,20 @@ def runSimult(trialNum, prac=False):
             stim = random.choice([0,1])
         resp=runTrial(dur,stim)
         #print(resp)
-        info=[trialNum, dur, stim, resp]
-        if info[2]==2:
-            info[2] = 1
+        info=['Simult', trialNum, dur, stim, resp]
+        if info[3]==2:
+            info[3] = 1
         else:
-            info[2] = 0
-        print(*info, sep=' ', file=fptr)
+            info[3] = 0
+        if info[3]==info[4]:
+            correct = True
+        else:
+            correct = False
+        info.append(correct)
+        if not prac:
+            print(*info, sep=' ', file=fptr)
         # staircase
-        if (info[2]==info[3])&(counter==0):
+        if (correct)&(counter==0): #simplify this now?
             counter+=1
             support.feedback("correct")
             if prac:
@@ -150,7 +156,7 @@ def runSimult(trialNum, prac=False):
                 visual.TextStim(win, text=feedback_text, pos=(0, 0)).draw()
                 win.flip()
                 core.wait(1)  # Display feedback for 1 second
-        elif (info[2]==info[3])&(counter==1):
+        elif (correct)&(counter==1):
             support.feedback("correct")
             dur = dur-2
             if dur<0:
@@ -180,10 +186,11 @@ def runInteg(trialNum, prac=False):
         trialNum = i
         resp=integrationTrial(soa,gPar)
         #print("target,resp,correct",resp[0],resp[1],resp[2])
-        info=[trialNum, soa, resp[2]]
-        print(*info, sep=' ', file=fptr)
+        info=[ "Integ", trialNum, soa, resp[0], resp[1], resp[2]]
+        if not prac:
+            print(*info, sep=' ', file=fptr)
         # staircase
-        if (info[2]==True)&(counter==0):
+        if (info[5]==True)&(counter==0):
             support.feedback("correct")
             counter+=1
             if prac:
@@ -191,7 +198,7 @@ def runInteg(trialNum, prac=False):
                 visual.TextStim(win, text=feedback_text, pos=(0, 0)).draw()
                 win.flip()
                 core.wait(1)  # Display feedback for 1 second
-        elif (info[2]==True)&(counter==1):
+        elif (info[5]==True)&(counter==1):
             support.feedback("correct")
             soa = soa+2
             if soa>8:
@@ -219,7 +226,7 @@ def runInteg(trialNum, prac=False):
 
 # Easy Practice Trials
 def practiceInteg(soa):
-    for i in range(2):
+    for i in range(3):
         resp=integrationTrial(soa,gPar)
         if (resp[2]==True):
             support.feedback("correct")
@@ -234,13 +241,63 @@ def practiceInteg(soa):
             visual.TextStim(win, text=feedback_text, pos=(0, 0)).draw()
             win.flip()
             core.wait(1)  # Display feedback for 1 second
-        
+            
+def practiceSimult(soa):
+    for i in range(3):
+        stim = random.choice([0,2])
+        if stim == 0:
+            stim = random.choice([0,1])
+        resp=runTrial(soa,stim)
+        if stim ==2:
+            stim = 1
+        else:
+            stim = 0
+        # staircase
+        if (stim==resp):
+            support.feedback("correct")
+            feedback_text = 'Correct!'
+            visual.TextStim(win, text=feedback_text, pos=(0, 0)).draw()
+            win.flip()
+            core.wait(1)  # Display feedback for 1 second
+        else:
+            support.feedback("incorrect")
+            feedback_text = 'Inorrect!'
+            visual.TextStim(win, text=feedback_text, pos=(0, 0)).draw()
+            win.flip()
+            core.wait(1)  # Display
+
+
+#############
+# Experiment and Instructions
+
+support.instruct(win,"Welcome to the experiment! \n\nPress spacebar to continue.")
+# practice trials
+support.instruct(win,"Let's begin with some practice. We will provide feedback on correctness.\n\nPress space to start the practice trials.")
 practiceInteg(2)
+practiceInteg(4)
+support.instruct(win,"Good, now the practice will get a little bit harder. \n\nPress spacebar to continue.")
+runInteg(3, prac=True)
+support.instruct(win,"Now we will practice the second task. \n\nPress spacebar to continue.")
+        
+practiceSimult(8)
+practiceSimult(6)
+support.instruct(win,"Good, now the practice will get a little bit harder again. \n\nPress spacebar to continue.")
+runSimult(3, prac=True)
+
+support.instruct(win,"Practice finished.\n\nPress space to start the first trial.")
+runInteg(10)
+support.instruct(win,"Great. Now we'll start the second trial. \n\nPress space to start the trials.")
+runSimult(10)
+support.instruct(win,"Session 1 finished! You can have some rest before starting session 2.\n\nPress spacebar to start session 2.")
+support.instruct(win,"Press space to start the next trial.")
+runInteg(10)
+support.instruct(win,"Great. Now we'll start the last trial. \n\nPress space to start.")
+runSimult(10)
+support.instruct(win,"Experiment finished. Thank you for your participation! :) \n\nPress spacebar to exit")
 
 '''
-#############
 
-# Experiment and Instructions
+# OLD Instructions
 
 #Task 1: Integration
 support.instruct(win,"Welcome to the experiment! \n\nPress spacebar to continue.")

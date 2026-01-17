@@ -243,7 +243,7 @@ intro()
 #########################
 #### PRACTICE BLOCKS ####
 #########################
-'''
+
 last=[90,70]
 nTrials=5
 increment=5
@@ -290,7 +290,7 @@ blk=5
 cong=0
 lPar.dur=[60,2,last[cong],16,16,16]
 last[cong]=runBlock(blk,cong,nTrials,increment)
-'''
+
 
 
 #############################
