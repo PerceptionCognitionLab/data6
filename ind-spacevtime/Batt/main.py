@@ -19,7 +19,7 @@ from TLetter import runTL
 sys.path.insert(0, 'E:/data6/ind-spacevtime/TPi/') 
 from TPi import runTP
 
-seed = random.randrange(1e6)
+
 dbConf=exlib.data6
 expName="indSVT"
 n_practices = 50
