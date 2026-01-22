@@ -57,16 +57,16 @@ lParDict={"isCongruent":0,
           "dur":[60,2,1,16,16,16]}
 lPar = SimpleNamespace(**lParDict)
 
-fixX=visual.TextStim(win,"+", height = 30)
-fixL=visual.Rect(win,pos=gPar.pos[0],fillColor=(-1,-1,-1),lineColor=(0,0,0),lineWidth=2,width=50,height=60)
-fixR=visual.Rect(win,pos=gPar.pos[1],fillColor=(-1,-1,-1),lineColor=(0,0,0),lineWidth=2,width=50,height=60)
+fixX=visual.TextStim(win,"+", height = 40)
+fixL=visual.Rect(win,pos=gPar.pos[0],fillColor=(-1,-1,-1),lineColor=(0,0,0),lineWidth=2,width=70,height=80)
+fixR=visual.Rect(win,pos=gPar.pos[1],fillColor=(-1,-1,-1),lineColor=(0,0,0),lineWidth=2,width=70,height=80)
 cXLR=visual.BufferImageStim(win,stim=(fixX,fixL,fixR))
 box=[fixL,fixR]
 
 def createStim():
-    targ=visual.TextStim(win, gPar.let[lPar.target],pos=gPar.pos[lPar.posTarg])
-    mask1=visual.TextStim(win, gPar.mask[0],pos=gPar.pos[lPar.posTarg])
-    mask2=visual.TextStim(win, gPar.mask[1],pos=gPar.pos[lPar.posTarg])
+    targ=visual.TextStim(win, gPar.let[lPar.target],pos=gPar.pos[lPar.posTarg], height=25)
+    mask1=visual.TextStim(win, gPar.mask[0],pos=gPar.pos[lPar.posTarg], height=25)
+    mask2=visual.TextStim(win, gPar.mask[1],pos=gPar.pos[lPar.posTarg], height=25)
     return fixX,fixL,fixR,cXLR,box,targ,mask1,mask2
 
 
@@ -83,21 +83,28 @@ def getResp():
     resp = gPar.keyList.index(resp)
     return([resp,round(rt,3)])
 
+
 def getLet():
     randLet=rng.integers(0,len(gPar.let))
     letStim=gPar.let[randLet]
     letter=visual.TextStim(win,text=letStim,height=30)
-    core.wait(0.50)
-    letter.draw()
-    win.flip()
+    event.clearEvents(eventType='keyboard')
+    trialClock.reset()
     
-    [resp,rt]=getResp()
-    if (gPar.let[resp]==letStim):
-        correctSound1.play()
-        correctSound2.play() 
-    else:       
-        errorSound1.play()
-        errorSound2.play()
+    core.wait(0.50)
+    while True:
+        letter.draw()
+        win.flip()
+    
+        resp,rt=getResp()
+        if (gPar.let[resp]==letStim):
+            correctSound1.play()
+            correctSound2.play()
+            core.wait(0.15)
+            break
+        else:       
+            errorSound1.play()
+            errorSound2.play()
     return()
     
 
@@ -243,7 +250,7 @@ intro()
 #########################
 #### PRACTICE BLOCKS ####
 #########################
-
+'''
 last=[90,70]
 nTrials=5
 increment=5
@@ -290,7 +297,7 @@ blk=5
 cong=0
 lPar.dur=[60,2,last[cong],16,16,16]
 last[cong]=runBlock(blk,cong,nTrials,increment)
-
+'''
 
 
 #############################
