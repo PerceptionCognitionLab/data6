@@ -6,24 +6,22 @@ prefs.hardware['audioLatencyMode']=3
 from psychopy import core, visual, sound, event
 import numpy as np
 from numpy import random
+import random as rd
 import sys    
 import math
 sys.path.insert(0, 'E:/lib/data6')
 import expLib61 as el
 from types import SimpleNamespace
 
-pid=1
-sid=1
-fname="test"
-
-expName="dev3" 
+seed = rd.randrange(1e6)
+expName="dev2" 
 refreshRate=165
-seed= -1
 
-#dbConf=el.beta
+
+dbConf=el.beta
 #dbConf=el.data6
-#el.setRefreshRate(refreshRate)
-#[pid,sid,fname]=el.startExp(expName,dbConf,pool=1,lockBox=False,refreshRate=refreshRate)
+el.setRefreshRate(refreshRate)
+[pid,sid,fname]=el.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
 
 fptr=open(fname,"w")
 rng = random.default_rng()
@@ -40,7 +38,7 @@ win=visual.Window(units= "pix",
                      allowGUI=False,
                      size=(2*scale,2*scale),
                      color=[-1,-1,-1],
-                     fullscr = True)
+                     fullscr = False)
 
 gParDict={"let":['A','S','D','F','G','H','J','K','L'],
       "mask":['@','#'],
@@ -54,7 +52,7 @@ targDur=2
 lParDict={"isCongruent":0,
           "target":0,
           "posTarg":0,          
-          "dur":[60,2,1,16,16,16]}
+          "dur":[100,2,1,16,16,16]}
 lPar = SimpleNamespace(**lParDict)
 
 fixX=visual.TextStim(win,"+", height = 40)
@@ -105,6 +103,7 @@ def getLet():
         else:       
             errorSound1.play()
             errorSound2.play()
+    el.endTrial()
     return()
     
 
@@ -149,10 +148,11 @@ def runBlock(blk,cong,nTrials,increment):
     numCor=0
     
     for trl in range(nTrials):
-        print(trl)
         lPar.target = int(rng.integers(0,9,1))
         lPar.posTarg = int(rng.integers(0,2,1))  #0=left, 1=right
         [resp,rt]=runTrial()
+        print(pid,sid,blk,trl,lPar.isCongruent,lPar.target,lPar.dur[2],resp,rt,sep=", ", file=fptr)
+
     
         if (resp==lPar.target)&(numCor==0):
             numCor+=1
@@ -250,20 +250,20 @@ intro()
 #########################
 #### PRACTICE BLOCKS ####
 #########################
-'''
+
 last=[90,70]
 nTrials=5
 increment=5
 #Block 0 - congruent practice 1 (slow)
 blk=0
 cong=1
-lPar.dur=[60,12,last[cong],22,16,16]
+lPar.dur=[100,12,last[cong],22,16,16]
 last[cong]=runBlock(blk,cong,nTrials,increment)
 
 #Block 1 - incongruent practice (slow)
 blk=1
 cong=0
-lPar.dur=[60,12,last[cong],22,16,16]
+lPar.dur=[100,12,last[cong],22,16,16]
 last[cong]=runBlock(blk,cong,nTrials,increment)
 
 
@@ -273,13 +273,13 @@ increment=2
 #Block 2 - congruent practice (slighely faster, more trials)
 blk=2
 cong=1
-lPar.dur=[60,6,last[cong],19,16,16]
+lPar.dur=[100,6,last[cong],19,16,16]
 last[cong]=runBlock(blk,cong,nTrials,increment)
 
 #Block 3 - incongruent practice (slightly faster, more trials)
 blk=3
 cong=0
-lPar.dur=[60,6,last[cong],19,16,16]
+lPar.dur=[100,6,last[cong],19,16,16]
 last[cong]=runBlock(blk,cong,nTrials,increment)
 
 
@@ -289,15 +289,14 @@ increment=2
 #Block 4 - congrent practice (at speed)
 blk=4
 cong=1
-lPar.dur=[60,2,last[cong],16,16,16]
+lPar.dur=[100,2,last[cong],16,16,16]
 last[cong]=runBlock(blk,cong,nTrials,increment)
 
 #Block 5 - incongruent practice (at speed)
 blk=5
 cong=0
-lPar.dur=[60,2,last[cong],16,16,16]
+lPar.dur=[100,2,last[cong],16,16,16]
 last[cong]=runBlock(blk,cong,nTrials,increment)
-'''
 
 
 #############################
@@ -311,47 +310,45 @@ increment=5                                             #starting increment
 #Block 6 - congruent 1
 blk=6
 cong=1
-lPar.dur=[60,2,last[cong],16,16,16]
+lPar.dur=[100,2,last[cong],16,16,16]
 last[cong]=runBlock(blk,cong,nTrials,increment)
 
 #Block 7 - incongruent 2
 blk=7
 cong=0
-lPar.dur=[60,2,last[cong],16,16,16]
+lPar.dur=[100,2,last[cong],16,16,16]
 last[cong]=runBlock(blk,cong,nTrials,increment)
                                              
 increment=2                                             #decreasing increment
 #Block 8 - congruent 2
 blk=8
 cong=1
-lPar.dur=[60,2,last[cong],16,16,16]
+lPar.dur=[100,2,last[cong],16,16,16]
 last[cong]=runBlock(blk,cong,nTrials,increment)
 
 #Block 9 -incongruent 2
 blk=9
 cong=0
-lPar.dur=[60,2,last[cong],16,16,16]
+lPar.dur=[100,2,last[cong],16,16,16]
 last[cong]=runBlock(blk,cong,nTrials,increment)
 
 increment=1                                             #decreasing increment
 #Block 10 - incongruent 3
 blk=10
 cong=0
-lPar.dur=[60,2,last[cong],16,16,16]
+lPar.dur=[100,2,last[cong],16,16,16]
 last[cong]=runBlock(blk,cong,nTrials,increment)
 
 #Block 11 - congruent 3
 blk=11
 cong=1
-lPar.dur=[60,2,last[cong],16,16,16]
+lPar.dur=[100,2,last[cong],16,16,16]
 last[cong]=runBlock(blk,cong,nTrials,increment)
 
 
-
-#hz=round(win.getActualFrameRate())
-#[resX,resY]=win.size
+[resX,resY]=win.size
 win.close()
 fptr.close()
-#el.st  opExp(sid,hz,resX,resY,seed,dbConf)
+el.stopExp(sid,refreshRate,resX,resY,seed,dbConf)
 core.quit()
 
