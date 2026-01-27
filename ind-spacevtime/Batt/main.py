@@ -10,6 +10,8 @@ sys.path.insert(0, 'E:/data6/ind-spacevtime/SGabor/')
 from SGabor import runSG
 sys.path.insert(0, 'E:/data6/ind-spacevtime/SLetter/')
 from SLetter import runSL
+
+
 sys.path.insert(0, 'E:/data6/ind-spacevtime/SPi/')
 from SPi import runSP
 sys.path.insert(0, 'E:/data6/ind-spacevtime/TGabor/')
@@ -23,6 +25,7 @@ from TPi import runTP
 dbConf=exlib.data6
 expName="indSVT"
 n_practices = 50
+
 n_trials = 50
 refreshRate=165
 exlib.setRefreshRate(refreshRate)
