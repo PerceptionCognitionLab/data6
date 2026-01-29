@@ -1,4 +1,4 @@
-from psychopy import core, visual, event
+e3from psychopy import core, visual, event
 import numpy as np
 from numpy import random
 import random as rd
