@@ -12,8 +12,11 @@ import math
 sys.path.insert(0, 'E:/lib/data6')
 import expLib61 as el
 from types import SimpleNamespace
+debug=True
 
 seed = rd.randrange(1e6)
+if debug:
+    seed=123
 expName="dev2" 
 refreshRate=165
 
@@ -21,12 +24,15 @@ refreshRate=165
 dbConf=el.beta
 #dbConf=el.data6
 el.setRefreshRate(refreshRate)
-[pid,sid,fname]=el.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
+#[pid,sid,fname]=el.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
+pid=1
+sid=1
+fname="test"
 
 fptr=open(fname,"w")
 rng = random.default_rng()
 
-scale=400
+scale=700
 
 trialClock=core.Clock()
 correctSound1 = sound.Sound(800, secs=0.15)
@@ -38,7 +44,7 @@ win=visual.Window(units= "pix",
                      allowGUI=False,
                      size=(2*scale,2*scale),
                      color=[-1,-1,-1],
-                     fullscr = False)
+                     fullscr = not debug)
 
 gParDict={"let":['A','S','D','F','G','H','J','K','L'],
       "mask":['@','#'],
@@ -148,6 +154,11 @@ def runBlock(blk,cong,nTrials,increment):
     numCor=0
     
     for trl in range(nTrials):
+        if debug: 
+              
+            visual.TextStim(win,trl,height=30).draw()
+            win.flip()
+            core.wait(.1)
         lPar.target = int(rng.integers(0,9,1))
         lPar.posTarg = int(rng.integers(0,2,1))  #0=left, 1=right
         [resp,rt]=runTrial()
@@ -242,109 +253,28 @@ def txt(blk):
 
 
 
-########################
-#### RUN EXPERIMENT ####
-########################
-
+nTrials=[5,5,10,10,30,30,60,60,60,60,60,60]
+if debug:
+    nTrials=[1,1,1,1,1,1,1,1,1,1,1,1]
+increment=[5,5,5,5,5,5,1,1,1,1,1,1]
+cong=[1,0,1,0,1,0,1,0,1,0,0,1]
+lastSet=[[90,70],[90,70],[75,55],[75,55], [60,40], [60,40]]
+dur0=[100,12,0,22,16,16]
+dur1=[100,2,0,16,16,16]
+last=[90,70] 
+        
 intro()
-
-#########################
-#### PRACTICE BLOCKS ####
-#########################
-
-last=[90,70]
-nTrials=5
-increment=5
-#Block 0 - congruent practice 1 (slow)
-blk=0
-cong=1
-lPar.dur=[100,12,last[cong],22,16,16]
-last[cong]=runBlock(blk,cong,nTrials,increment)
-
-#Block 1 - incongruent practice (slow)
-blk=1
-cong=0
-lPar.dur=[100,12,last[cong],22,16,16]
-last[cong]=runBlock(blk,cong,nTrials,increment)
+for blk in range(12):
+    if blk<4:
+        lPar.dur=dur0
+    else:
+        lPar.dur=dur1
+    if blk<6:
+        last=lastSet[blk]
+    lPar.dur[2]=last[cong[blk]]
+    last[cong[blk]]=runBlock(blk,cong[blk],nTrials[blk],increment[blk])
 
 
-last=[75,55]
-nTrials=10
-increment=2
-#Block 2 - congruent practice (slighely faster, more trials)
-blk=2
-cong=1
-lPar.dur=[100,6,last[cong],19,16,16]
-last[cong]=runBlock(blk,cong,nTrials,increment)
-
-#Block 3 - incongruent practice (slightly faster, more trials)
-blk=3
-cong=0
-lPar.dur=[100,6,last[cong],19,16,16]
-last[cong]=runBlock(blk,cong,nTrials,increment)
-
-
-last=[60,40]
-nTrials=15
-increment=2
-#Block 4 - congrent practice (at speed)
-blk=4
-cong=1
-lPar.dur=[100,2,last[cong],16,16,16]
-last[cong]=runBlock(blk,cong,nTrials,increment)
-
-#Block 5 - incongruent practice (at speed)
-blk=5
-cong=0
-lPar.dur=[100,2,last[cong],16,16,16]
-last[cong]=runBlock(blk,cong,nTrials,increment)
-
-
-#############################
-#### EXPERIMENTAL BLOCKS ####
-#############################
-
-#startExp()
-last=[60,40]                                            #staircase start
-nTrials=60                                              #number experimental trials
-increment=5                                             #starting increment
-#Block 6 - congruent 1
-blk=6
-cong=1
-lPar.dur=[100,2,last[cong],16,16,16]
-last[cong]=runBlock(blk,cong,nTrials,increment)
-
-#Block 7 - incongruent 2
-blk=7
-cong=0
-lPar.dur=[100,2,last[cong],16,16,16]
-last[cong]=runBlock(blk,cong,nTrials,increment)
-                                             
-increment=2                                             #decreasing increment
-#Block 8 - congruent 2
-blk=8
-cong=1
-lPar.dur=[100,2,last[cong],16,16,16]
-last[cong]=runBlock(blk,cong,nTrials,increment)
-
-#Block 9 -incongruent 2
-blk=9
-cong=0
-lPar.dur=[100,2,last[cong],16,16,16]
-last[cong]=runBlock(blk,cong,nTrials,increment)
-
-increment=1                                             #decreasing increment
-#Block 10 - incongruent 3
-blk=10
-cong=0
-lPar.dur=[100,2,last[cong],16,16,16]
-last[cong]=runBlock(blk,cong,nTrials,increment)
-
-#Block 11 - congruent 3
-blk=11
-cong=1
-lPar.dur=[100,2,last[cong],16,16,16]
-last[cong]=runBlock(blk,cong,nTrials,increment)
 
 
 [resX,resY]=win.size
