@@ -1,0 +1,5 @@
+block pid taskType trialNum soa stim resp correct
+1 7 Integ 0 6 12 12 True
+2 7 Simult 0 6 1 1 True
+3 7 Integ 0 6 6 18 False
+4 7 Simult 0 6 0 1 False

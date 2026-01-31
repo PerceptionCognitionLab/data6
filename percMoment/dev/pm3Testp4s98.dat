@@ -1,0 +1,3 @@
+taskType trialNum soa stim resp correct
+Simult 0 6 1 1 True
+Simult 1 6 0 1 False

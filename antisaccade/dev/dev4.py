@@ -12,27 +12,24 @@ import math
 sys.path.insert(0, 'E:/lib/data6')
 import expLib61 as el
 from types import SimpleNamespace
+
 debug=True
 
+rng = random.default_rng()
 seed = rd.randrange(1e6)
 if debug:
     seed=123
 expName="dev2" 
 refreshRate=165
 
-
 dbConf=el.beta
 #dbConf=el.data6
 el.setRefreshRate(refreshRate)
-#[pid,sid,fname]=el.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
-pid=1
-sid=1
-fname="test"
+[pid,sid,fname]=el.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
 
 fptr=open(fname,"w")
-rng = random.default_rng()
 
-scale=700
+scale=600
 
 trialClock=core.Clock()
 correctSound1 = sound.Sound(800, secs=0.15)
@@ -44,7 +41,7 @@ win=visual.Window(units= "pix",
                      allowGUI=False,
                      size=(2*scale,2*scale),
                      color=[-1,-1,-1],
-                     fullscr = not debug)
+                     fullscr = False)
 
 gParDict={"let":['A','S','D','F','G','H','J','K','L'],
       "mask":['@','#'],
@@ -109,6 +106,7 @@ def getLet():
         else:       
             errorSound1.play()
             errorSound2.play()
+    
     el.endTrial()
     return()
     
@@ -136,6 +134,7 @@ def runTrial():
     frames.append(visual.BufferImageStim(win,stim=(fixX,fixL,fixR,mask1)))
     frames.append(visual.BufferImageStim(win,stim=(fixX,fixL,fixR,mask2)))
     stamps=el.runFrames(win,frames,lPar.dur,trialClock)
+
     [resp,rt]=getResp()
     if (resp==lPar.target):
         correctSound1.play()
@@ -143,8 +142,10 @@ def runTrial():
     else:
         errorSound1.play()
         errorSound2.play()
+
     el.endTrial()
-    return([resp,rt])
+    return([1, 1])
+    # return([resp,rt])
     
 
 def runBlock(blk,cong,nTrials,increment):
@@ -154,18 +155,19 @@ def runBlock(blk,cong,nTrials,increment):
     numCor=0
     
     for trl in range(nTrials):
+        
         if debug: 
-              
             visual.TextStim(win,trl,height=30).draw()
             win.flip()
             core.wait(.1)
+            
         lPar.target = int(rng.integers(0,9,1))
         lPar.posTarg = int(rng.integers(0,2,1))  #0=left, 1=right
         [resp,rt]=runTrial()
         print(pid,sid,blk,trl,lPar.isCongruent,lPar.target,lPar.dur[2],resp,rt,sep=", ", file=fptr)
         fptr.flush()
 
-    
+
         if (resp==lPar.target)&(numCor==0):
             numCor+=1
         elif (resp==lPar.target)&(numCor==1):
@@ -176,7 +178,8 @@ def runBlock(blk,cong,nTrials,increment):
         else:
             lPar.dur[targDur]=lPar.dur[targDur]+increment
             numCor=0
-
+            
+    el.endTrial()
     return(lPar.dur[targDur])
 
 
@@ -258,10 +261,14 @@ if debug:
     nTrials=[1,1,1,1,1,1,1,1,1,1,1,1]
 increment=[5,5,5,5,5,5,1,1,1,1,1,1]
 cong=[1,0,1,0,1,0,1,0,1,0,0,1]
+
+#lastSet=[[1,1],[1,1],[1,1],[1,1], [1,1], [1,1]]
+#dur0=[1,1,1,1,1,1]
+#dur1=[1,1,1,1,1,1]
 lastSet=[[90,70],[90,70],[75,55],[75,55], [60,40], [60,40]]
 dur0=[100,12,0,22,16,16]
 dur1=[100,2,0,16,16,16]
-last=[90,70] 
+last=[60,40] 
         
 intro()
 for blk in range(12):
@@ -276,10 +283,10 @@ for blk in range(12):
 
 
 
-
+fptr.close()
+concern = el.getConcern(win)
 [resX,resY]=win.size
 win.close()
-fptr.close()
-el.stopExp(sid,refreshRate,resX,resY,seed,dbConf)
+el.stopExp(sid, refreshRate, resX, resY, seed, dbConf, concern)
 core.quit()
 

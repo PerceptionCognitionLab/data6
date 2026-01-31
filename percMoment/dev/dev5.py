@@ -18,11 +18,12 @@ refreshRate=165
 elib.setRefreshRate(refreshRate)
 expName="pm3Test"
 dbConf=elib.beta
-#[pid,sid,fname]=elib.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
-[pid,sid,fname]=[1,1,'test']
+[pid,sid,fname]=elib.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
+# [pid,sid,fname]=[1,1,'test']
 fptr=open(fname,"w")
-header=[ "taskType", "trialNum", "soa", "stim", "resp", "correct"]
+header=["pid", "block", "taskType", "trialNum", "soa", "stim", "resp", "correct"]
 print(*header, sep=' ', file=fptr)
+block = 0
 
 
 win = visual.Window(units="pix", size=(500, 500), color=[-1, -1, -1], fullscr=True)
@@ -44,6 +45,7 @@ gPar=support.initGlobals(gPar0)  # adds x, y, validTarget, N to structure
 fix = visual.TextStim(win, "+")  # fixation cross
 blank = visual.TextStim(win, "")  # blank window
 int_trial = 3
+
 
 
 #############
@@ -125,7 +127,8 @@ def integrationTrial(soa,gPar):
 #############
 # staircase
 #############
-def runSimult(trialNum, prac=False):
+
+def runSimult(trialNum, block, prac=False):
     counter = 0
     dur = 6
     for i in range(trialNum):
@@ -135,12 +138,12 @@ def runSimult(trialNum, prac=False):
             stim = random.choice([0,1])
         resp=runTrial(dur,stim)
         #print(resp)
-        info=['Simult', trialNum, dur, stim, resp]
-        if info[3]==2:
-            info[3] = 1
+        info=[pid, block, 'Simult', trialNum+1,  dur, stim, resp]
+        if info[5]==2:
+            info[5] = 1
         else:
-            info[3] = 0
-        if info[3]==info[4]:
+            info[5] = 0
+        if info[5]==info[6]:
             correct = True
         else:
             correct = False
@@ -179,18 +182,18 @@ def runSimult(trialNum, prac=False):
                 win.flip()
                 core.wait(1)  # Display feedback for 1 second
 
-def runInteg(trialNum, prac=False):
+def runInteg(trialNum, block, prac=False):
     counter = 0
     soa = 6
     for i in range(trialNum):
         trialNum = i
         resp=integrationTrial(soa,gPar)
         #print("target,resp,correct",resp[0],resp[1],resp[2])
-        info=[ "Integ", trialNum, soa, resp[0], resp[1], resp[2]]
+        info=[pid, block, 'Integ', trialNum+1,  soa, resp[0], resp[1], resp[2]]
         if not prac:
             print(*info, sep=' ', file=fptr)
         # staircase
-        if (info[5]==True)&(counter==0):
+        if (info[7]==True)&(counter==0):
             support.feedback("correct")
             counter+=1
             if prac:
@@ -198,7 +201,7 @@ def runInteg(trialNum, prac=False):
                 visual.TextStim(win, text=feedback_text, pos=(0, 0)).draw()
                 win.flip()
                 core.wait(1)  # Display feedback for 1 second
-        elif (info[5]==True)&(counter==1):
+        elif (info[7]==True)&(counter==1):
             support.feedback("correct")
             soa = soa+2
             if soa>8:
@@ -268,56 +271,38 @@ def practiceSimult(soa):
 
 
 #############
-# Experiment and Instructions
+# Experiment and Instruction
 
 support.instruct(win,"Welcome to the experiment! \n\nPress spacebar to continue.")
 # practice trials
 support.instruct(win,"Let's begin with some practice. We will provide feedback on correctness.\n\nPress space to start the practice trials.")
-practiceInteg(2)
-practiceInteg(4)
+practiceInteg(1)
+practiceInteg(3)
 support.instruct(win,"Good, now the practice will get a little bit harder. \n\nPress spacebar to continue.")
-runInteg(3, prac=True)
+runInteg(3, 0, prac=True)
 support.instruct(win,"Now we will practice the second task. \n\nPress spacebar to continue.")
         
 practiceSimult(8)
 practiceSimult(6)
 support.instruct(win,"Good, now the practice will get a little bit harder again. \n\nPress spacebar to continue.")
-runSimult(3, prac=True)
+runSimult(3, 0, prac=True)
 
+# start trials
 support.instruct(win,"Practice finished.\n\nPress space to start the first trial.")
-runInteg(10)
+runInteg(40, 1)
 support.instruct(win,"Great. Now we'll start the second trial. \n\nPress space to start the trials.")
-runSimult(10)
+runSimult(40, 2)
 support.instruct(win,"Session 1 finished! You can have some rest before starting session 2.\n\nPress spacebar to start session 2.")
 support.instruct(win,"Press space to start the next trial.")
-runInteg(10)
+runInteg(40, 3)
 support.instruct(win,"Great. Now we'll start the last trial. \n\nPress space to start.")
-runSimult(10)
-support.instruct(win,"Experiment finished. Thank you for your participation! :) \n\nPress spacebar to exit")
+runSimult(40,4)
 
-'''
 
-# OLD Instructions
-
-#Task 1: Integration
-support.instruct(win,"Welcome to the experiment! \n\nPress spacebar to continue.")
-support.instruct(win,"In this session, a gird of white dots will appear in two seperate flashes. Your task is to identify the dot that is missing.\n\nWhen all of the dots turn red, click the dot that you think was missing.\n\nPress spacebar to continue")
-support.instruct(win,"Let's begin with some practice. We will provide feedback on correctness.\n\nPress space to start the practice trials.")
-runInteg(5, prac=True ) #turn this into a practice trial
-support.instruct(win,"Practice finished.\n\nPress space to start the trials.")
-runInteg(5)
-support.instruct(win,"Session 1 finished! You can have some rest before starting session 2.\n\nPress spacebar to start session 2.")
-
-#Task 2: Simultaneous
-support.instruct(win,"In this session, two white dots will appear side by side. Your task is to identify if both dots appeared at the same time or if one appeared before the other.\n\nIf you think they appeared at the same time. press 'same'. If you think one of them appeared first, press 'different'.\n\nPress spacebar to continue")
-support.instruct(win,"Let's begin with some practice. We will provide feedback on correctness.\n\nPress space to start the practice trials.")
-runSimult(5, prac=True) #turn this into a practice trial
-support.instruct(win,"Practice finished.\n\nPress space to start the trials.")
-runSimult(5)
-
-support.instruct(win,"Experiment finished. Thank you for your participation! :) \n\nPress spacebar to exit")
-'''
 
 fptr.close()
+concern = elib.getConcern(win)
+[resX,resY]=win.size
 win.close()
+elib.stopExp(sid, refreshRate, resX, resY, seed, dbConf, concern)
 core.quit()
