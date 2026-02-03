@@ -229,7 +229,7 @@ def runInteg(trialNum, block, prac=False):
 
 # Easy Practice Trials
 def practiceInteg(soa):
-    for i in range(3):
+    for i in range(4):
         resp=integrationTrial(soa,gPar)
         if (resp[2]==True):
             support.feedback("correct")
@@ -246,7 +246,7 @@ def practiceInteg(soa):
             core.wait(1)  # Display feedback for 1 second
             
 def practiceSimult(soa):
-    for i in range(3):
+    for i in range(4):
         stim = random.choice([0,2])
         if stim == 0:
             stim = random.choice([0,1])
@@ -279,13 +279,13 @@ support.instruct(win,"Let's begin with some practice. We will provide feedback o
 practiceInteg(1)
 practiceInteg(3)
 support.instruct(win,"Good, now the practice will get a little bit harder. \n\nPress spacebar to continue.")
-runInteg(3, 0, prac=True)
+runInteg(6, 0, prac=True)
 support.instruct(win,"Now we will practice the second task. \n\nPress spacebar to continue.")
         
 practiceSimult(8)
 practiceSimult(6)
 support.instruct(win,"Good, now the practice will get a little bit harder again. \n\nPress spacebar to continue.")
-runSimult(3, 0, prac=True)
+runSimult(6, 0, prac=True)
 
 # start trials
 support.instruct(win,"Practice finished.\n\nPress space to start the first trial.")
