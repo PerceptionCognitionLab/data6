@@ -15,7 +15,7 @@ from types import SimpleNamespace
 
 ### Use when debugging ###
 ### Replicates bug, view trial numbers, shorten stimuli frames, other
-debug=True
+debug=False
 
 
 rng = random.default_rng()
@@ -158,8 +158,7 @@ def runTrial():
         errorSound2.play()
 
     el.endTrial()                           #garbage collect 2
-    return([1, 1])
-    #return([resp,rt])
+    return([resp,rt])
     
     
 ### Runs blocks ###
@@ -277,7 +276,7 @@ def txt(blk): # block instructions
 #########################
 
 nTrials=[5,5,10,10,30,30,60,60,60,60,60,60] # first 6 = practice; last 6 = experiment
-increment=[5,5,5,5,5,5,1,1,1,1,1,1] # Increment=5: practice trials staircase; Increment=1: experimental trials staircase
+increment=[5,5,5,5,5,5,2,2,1,1,1,1] # Increment=5: practice trials staircase; Increment=1: experimental trials staircase
 cong=[1,0,1,0,1,0,1,0,1,0,0,1]
 #cong=[1,0,1,0,1,0,0,1,0,1,1,0] # use in other file for counterbalancing
 lastSet=[[90,70],[90,70],[75,55],[75,55],[60,40],[60,40]]
