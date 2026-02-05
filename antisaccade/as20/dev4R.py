@@ -22,14 +22,14 @@ rng = random.default_rng()
 seed = rd.randrange(1e6)
 #if debug:
     #seed=123
-expName="dev2" 
+expName="as20" 
 refreshRate=165
 trialClock=core.Clock()
 
 
 ### Save to database ###
-dbConf=el.beta                  #for dev
-#dbConf=el.data6                #for real data collection
+#dbConf=el.beta                #for dev
+dbConf=el.data6                #for real data collection
 el.setRefreshRate(refreshRate)
 [pid,sid,fname]=el.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
 fptr=open(fname,"w")
@@ -277,8 +277,8 @@ def txt(blk): # block instructions
 
 nTrials=[5,5,10,10,30,30,60,60,60,60,60,60] # first 6 = practice; last 6 = experiment
 increment=[5,5,5,5,5,5,2,2,1,1,1,1] # Increment=5: practice trials staircase; Increment=1: experimental trials staircase
-cong=[1,0,1,0,1,0,1,0,1,0,0,1]
-#cong=[1,0,1,0,1,0,0,1,0,1,1,0] # use in other file for counterbalancing
+#cong=[1,0,1,0,1,0,1,0,1,0,0,1]
+cong=[1,0,1,0,1,0,0,1,0,1,1,0] # use in second file for counterbalancing
 lastSet=[[90,70],[90,70],[75,55],[75,55],[60,40],[60,40]]
 dur0=[100,12,0,22,16,16]
 dur1=[100,6,0,19,16,16]

@@ -67,7 +67,7 @@ def runTrial(dur, stimCode):
     option.append(visual.TextBox2(win, text = "Same", size=(800,400), pos=(350,-280), letterHeight=30))
     options=visual.BufferImageStim(win,stim=option)
 
-    frames = [fix, blank, stim[stimCode], blank, both, options]
+    frames = [fix, blank, stim[stimCode], blank, both, options] # wait a sec before mouse appears
     frameTimes = [60,60, 1, dur, 1, 1]
 
     stamps=elib.runFrames(win,frames,frameTimes,trialClock)
@@ -215,8 +215,8 @@ def runInteg(trialNum, block, prac=False):
         else:
             support.feedback("incorrect")
             soa = soa-1
-            if soa<0:
-                soa=0
+            if soa<1:
+                soa=1
             counter=0
             if prac:
                 feedback_text = 'Inorrect!'
@@ -281,23 +281,25 @@ practiceInteg(3)
 support.instruct(win,"Good, now the practice will get a little bit harder. \n\nPress spacebar to continue.")
 runInteg(6, 0, prac=True)
 support.instruct(win,"Now we will practice the second task. \n\nPress spacebar to continue.")
-        
 practiceSimult(8)
 practiceSimult(6)
 support.instruct(win,"Good, now the practice will get a little bit harder again. \n\nPress spacebar to continue.")
 runSimult(6, 0, prac=True)
-
 # start trials
 support.instruct(win,"Practice finished.\n\nPress space to start the first trial.")
-runInteg(40, 1)
+runInteg(50, 1)
 support.instruct(win,"Great. Now we'll start the second trial. \n\nPress space to start the trials.")
-runSimult(40, 2)
+runSimult(50, 2)
 support.instruct(win,"Session 1 finished! You can have some rest before starting session 2.\n\nPress spacebar to start session 2.")
 support.instruct(win,"Press space to start the next trial.")
-runInteg(40, 3)
+runInteg(50, 3)
+support.instruct(win,"Great. Now we'll start the next trial. \n\nPress space to start the trials.")
+runSimult(50, 4)
+support.instruct(win,"Session 2 finished! You can have some rest before starting the last session.\n\nPress spacebar to start session 3.")
+support.instruct(win,"Press space to start the next trial.")
+runInteg(50, 5)
 support.instruct(win,"Great. Now we'll start the last trial. \n\nPress space to start.")
-runSimult(40,4)
-
+runSimult(50,6)
 
 
 fptr.close()
