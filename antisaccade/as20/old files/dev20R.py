@@ -13,42 +13,32 @@ sys.path.insert(0, 'E:/lib/data6')
 import expLib61 as el
 from types import SimpleNamespace
 
-### Use when debugging ###
-### Replicates bug, view trial numbers, shorten stimuli frames, other
-debug=False
-
-
-rng = random.default_rng()
 seed = rd.randrange(1e6)
-#if debug:
-    #seed=123
 expName="as20" 
 refreshRate=165
-trialClock=core.Clock()
 
 
-### Save to database ###
-#dbConf=el.beta                #for dev
-dbConf=el.data6                #for real data collection
+#dbConf=el.beta
+dbConf=el.data6
 el.setRefreshRate(refreshRate)
 [pid,sid,fname]=el.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
+
 fptr=open(fname,"w")
+rng = random.default_rng()
 
+scale=400
 
-### Feedback sounds ##
+trialClock=core.Clock()
 correctSound1 = sound.Sound(800, secs=0.15)
 correctSound2 = sound.Sound(1200, secs=0.15)
 errorSound1 = sound.Sound(500, secs=0.30)
 errorSound2 = sound.Sound(375, secs=0.30)
 
-
-scale=600
 win=visual.Window(units= "pix", 
                      allowGUI=False,
                      size=(2*scale,2*scale),
                      color=[-1,-1,-1],
                      fullscr = True)
-
 
 gParDict={"let":['A','S','D','F','G','H','J','K','L'],
       "mask":['@','#'],
@@ -65,13 +55,12 @@ lParDict={"isCongruent":0,
           "dur":[100,2,1,16,16,16]}
 lPar = SimpleNamespace(**lParDict)
 
-
-### Create stimuli ###
 fixX=visual.TextStim(win,"+", height = 40)
 fixL=visual.Rect(win,pos=gPar.pos[0],fillColor=(-1,-1,-1),lineColor=(0,0,0),lineWidth=2,width=70,height=80)
 fixR=visual.Rect(win,pos=gPar.pos[1],fillColor=(-1,-1,-1),lineColor=(0,0,0),lineWidth=2,width=70,height=80)
 cXLR=visual.BufferImageStim(win,stim=(fixX,fixL,fixR))
 box=[fixL,fixR]
+
 def createStim():
     targ=visual.TextStim(win, gPar.let[lPar.target],pos=gPar.pos[lPar.posTarg], height=25)
     mask1=visual.TextStim(win, gPar.mask[0],pos=gPar.pos[lPar.posTarg], height=25)
@@ -79,8 +68,6 @@ def createStim():
     return fixX,fixL,fixR,cXLR,box,targ,mask1,mask2
 
 
-### Get response from participants ###
-### Called in each fixation check (getLet) and each trial (runTrial)
 def getResp():
     keys=event.getKeys(keyList=gPar.keyList,timeStamped=trialClock)
     if len(keys)==0:
@@ -95,7 +82,6 @@ def getResp():
     return([resp,round(rt,3)])
 
 
-### Fixation check ###
 def getLet():
     randLet=rng.integers(0,len(gPar.let))
     letStim=gPar.let[randLet]
@@ -112,43 +98,38 @@ def getLet():
         if (gPar.let[resp]==letStim):
             correctSound1.play()
             correctSound2.play()
-            core.wait(0.25)
-            break                           #continues to main trial
-        else:                               #waits until correct
+            core.wait(0.15)
+            break
+        else:       
             errorSound1.play()
             errorSound2.play()
-    
-    el.endTrial()                           #garbage collect (decrease memory usage)
+    el.endTrial()
     return()
     
 
-### Run a trial ###
+
 def runTrial():
     frames=[]
 
-    getLet()                                #fixation check
+    getLet()
 
     if lPar.isCongruent==1:
         posCue=lPar.posTarg
     else:
         posCue=1-lPar.posTarg
-    #fixation
+    
     fixX,fixL,fixR,cXLR,box,targ,mask1,mask2=createStim()
     frames.append(cXLR)
-    #cue
     box[posCue].lineColor=[1,1,1]
     box[posCue].lineWidth=10
     frames.append(visual.BufferImageStim(win,stim=box+[fixX]))
     box[posCue].lineColor=[0,0,0]
     box[posCue].lineWidth=2
-    #staircased blank
     frames.append(cXLR)
-    #target
     frames.append(visual.BufferImageStim(win,stim=(fixX,fixL,fixR,targ)))
     frames.append(visual.BufferImageStim(win,stim=(fixX,fixL,fixR,mask1)))
     frames.append(visual.BufferImageStim(win,stim=(fixX,fixL,fixR,mask2)))
     stamps=el.runFrames(win,frames,lPar.dur,trialClock)
-
     [resp,rt]=getResp()
     if (resp==lPar.target):
         correctSound1.play()
@@ -156,34 +137,23 @@ def runTrial():
     else:
         errorSound1.play()
         errorSound2.play()
-
-    el.endTrial()                           #garbage collect 2
+    el.endTrial()
     return([resp,rt])
     
-    
-### Runs blocks ###
+
 def runBlock(blk,cong,nTrials,increment):
-    txt(blk)                                #block instructions
-    blockStart(blk,cong)                    #block dividers (prints number + condition)
+    txt(blk)
+    blockStart(blk,cong)
     lPar.isCongruent=cong
     numCor=0
     
-    ### Runs each trial per block
     for trl in range(nTrials):
-        
-        # Show trial number for debugging
-        if debug: 
-            visual.TextStim(win,trl,height=30).draw()
-            win.flip()
-            core.wait(.1)
-            
         lPar.target = int(rng.integers(0,9,1))
         lPar.posTarg = int(rng.integers(0,2,1))  #0=left, 1=right
         [resp,rt]=runTrial()
         print(pid,sid,blk,trl,lPar.isCongruent,lPar.target,lPar.dur[2],resp,rt,sep=", ", file=fptr)
-        fptr.flush()                        #dump data into saved file every trial
 
-        ### Staircase ###
+    
         if (resp==lPar.target)&(numCor==0):
             numCor+=1
         elif (resp==lPar.target)&(numCor==1):
@@ -194,8 +164,7 @@ def runBlock(blk,cong,nTrials,increment):
         else:
             lPar.dur[targDur]=lPar.dur[targDur]+increment
             numCor=0
-            
-    el.endTrial()                           # garbage collect 3
+
     return(lPar.dur[targDur])
 
 
@@ -203,7 +172,7 @@ def runBlock(blk,cong,nTrials,increment):
 #### TEXT ####
 ##############
 
-def blockStart(blk,cong): #block divider
+def blockStart(blk,cong):
     if (cong==1):
         cond = "Same side"
     else:
@@ -213,7 +182,7 @@ def blockStart(blk,cong): #block divider
     win.flip()
     event.waitKeys()
 
-def intro(): # start experiment text
+def intro():
     messageIntro=visual.TextStim(win,"Welcome to the experiment! \n\n We will start with some practice blocks." \
                                 "\n\n Press any key to begin.",height=30)
     messageIntro.draw()
@@ -221,7 +190,7 @@ def intro(): # start experiment text
     event.waitKeys()
 
 
-def txt(blk): # block instructions
+def txt(blk):
     if (blk==0):
         text=visual.TextStim(win,"In this experiemnt, you will see two squares on either side of the screen." \
                           " One of the squares will light up (the cue). Then a letter (the target) will appear in either the same square" \
@@ -271,54 +240,115 @@ def txt(blk): # block instructions
         event.waitKeys()  
 
 
-#########################
-### EXPERIMENT VALUES ###
-#########################
 
-nTrials=[5,5,10,10,30,30,60,60,60,60,60,60] # first 6 = practice; last 6 = experiment
-increment=[5,5,5,5,5,5,2,2,1,1,1,1] # Increment=5: practice trials staircase; Increment=1: experimental trials staircase
-#cong=[1,0,1,0,1,0,1,0,1,0,0,1]
-cong=[1,0,1,0,1,0,0,1,0,1,1,0] # use in second file for counterbalancing
-lastSet=[[90,70],[90,70],[75,55],[75,55],[60,40],[60,40]]
-dur0=[100,12,0,22,16,16]
-dur1=[100,6,0,19,16,16]
-dur2=[100,2,0,16,16,16]
-last=[60,40] 
-#if debug:
-    #nTrials=[1,1,1,1,1,1,1,1,1,1,1,1]
-    #increment=[1,1,1,1,1,1,1,1,1,1,1,1]
-    #lastSet=[[1,1],[1,1],[1,1],[1,1],[1,1],[1,1]]
-    #dur0=[1,1,1,1,1,1]
-    #dur1=[1,1,1,1,1,1]
-    #dur2=[1,1,1,1,1,1]
-    #last=[1,1]
+########################
+#### RUN EXPERIMENT ####
+########################
 
-
-##################
-### EXPERIMENT ###
-##################
-        
 intro()
-for blk in range(12):
-    if blk<2:                               # first 2 practice blocks                       
-        lPar.dur=dur0                       # slow
-    elif blk==2 or blk==3:                  # second 2 practice blocks
-        lPar.dur=dur1                       # slightly slower than experimental trials
-    else:                                   # all other trials (practice 3 and experimental)
-        lPar.dur=dur2                       # at speed
-        
-    if blk<5:                               # if block 0-3 (first 2 practice blocks)
-        last=lastSet[blk]                   # value used for staircase = set value in lastSet
-    lPar.dur[2]=last[cong[blk]]             # for practice 3 and experimental blocks, staircased duration uses value in last
-    last[cong[blk]]=runBlock(blk,cong[blk],nTrials[blk],increment[blk])
+
+#########################
+#### PRACTICE BLOCKS ####
+#########################
+
+last=[90,70]
+nTrials=5
+increment=5
+#Block 0 - congruent practice 1 (slow)
+blk=0
+cong=1
+lPar.dur=[100,12,last[cong],22,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
+
+#Block 1 - incongruent practice (slow)
+blk=1
+cong=0
+lPar.dur=[100,12,last[cong],22,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
 
 
+last=[75,55]
+nTrials=10
+increment=2
+#Block 2 - congruent practice (slighely faster, more trials)
+blk=2
+cong=1
+lPar.dur=[100,6,last[cong],19,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
 
-fptr.close()
-concern = el.getConcern(win)
+#Block 3 - incongruent practice (slightly faster, more trials)
+blk=3
+cong=0
+lPar.dur=[100,6,last[cong],19,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
+
+
+last=[60,40]
+nTrials=15
+increment=2
+#Block 4 - congrent practice (at speed)
+blk=4
+cong=0
+lPar.dur=[100,2,last[cong],16,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
+
+#Block 5 - incongruent practice (at speed)
+blk=5
+cong=1
+lPar.dur=[100,2,last[cong],16,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
+
+
+#############################
+#### EXPERIMENTAL BLOCKS ####
+#############################
+
+#startExp()
+last=[60,40]                                            #staircase start
+nTrials=60                                              #number experimental trials
+increment=5                                             #starting increment
+#Block 6 - congruent 1
+blk=6
+cong=0
+lPar.dur=[100,2,last[cong],16,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
+
+#Block 7 - incongruent 2
+blk=7
+cong=1
+lPar.dur=[100,2,last[cong],16,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
+                                             
+increment=2                                             #decreasing increment
+#Block 8 - congruent 2
+blk=8
+cong=0
+lPar.dur=[100,2,last[cong],16,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
+
+#Block 9 -incongruent 2
+blk=9
+cong=1
+lPar.dur=[100,2,last[cong],16,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
+
+increment=1                                             #decreasing increment
+#Block 10 - incongruent 3
+blk=10
+cong=1
+lPar.dur=[100,2,last[cong],16,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
+
+#Block 11 - congruent 3
+blk=11
+cong=0
+lPar.dur=[100,2,last[cong],16,16,16]
+last[cong]=runBlock(blk,cong,nTrials,increment)
+
+
 [resX,resY]=win.size
 win.close()
-el.stopExp(sid, refreshRate, resX, resY, seed, dbConf, concern)
+fptr.close()
+el.stopExp(sid,refreshRate,resX,resY,seed,dbConf)
 core.quit()
-# yay!!
 

@@ -16,8 +16,8 @@ import support
 abortKey=['9']
 refreshRate=165
 elib.setRefreshRate(refreshRate)
-expName="pm3Test"
-dbConf=elib.beta
+expName="pm3"
+dbConf=elib.data6
 [pid,sid,fname]=elib.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
 # [pid,sid,fname]=[1,1,'test']
 fptr=open(fname,"w")
@@ -67,7 +67,7 @@ def runTrial(dur, stimCode):
     option.append(visual.TextBox2(win, text = "Same", size=(800,400), pos=(350,-280), letterHeight=30))
     options=visual.BufferImageStim(win,stim=option)
 
-    frames = [fix, blank, stim[stimCode], blank, both, options] 
+    frames = [fix, blank, stim[stimCode], blank, both, options] # wait a sec before mouse appears
     frameTimes = [60,60, 1, dur, 1, 1]
 
     stamps=elib.runFrames(win,frames,frameTimes,trialClock)
@@ -177,7 +177,7 @@ def runSimult(trialNum, block, prac=False):
                 dur=8
             counter=0
             if prac:
-                feedback_text = 'Incorrect!'
+                feedback_text = 'Inorrect!'
                 visual.TextStim(win, text=feedback_text, pos=(0, 0)).draw()
                 win.flip()
                 core.wait(1)  # Display feedback for 1 second
@@ -219,7 +219,7 @@ def runInteg(trialNum, block, prac=False):
                 soa=1
             counter=0
             if prac:
-                feedback_text = 'Incorrect!'
+                feedback_text = 'Inorrect!'
                 visual.TextStim(win, text=feedback_text, pos=(0, 0)).draw()
                 win.flip()
                 core.wait(1)  # Display feedback for 1 second
