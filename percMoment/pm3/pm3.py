@@ -53,6 +53,12 @@ int_trial = 3
 #############
 
 def runTrial(dur, stimCode):
+    keys = event.getKeys(timeStamped=trialClock)
+    for key, rt in keys:
+        if key == '9':
+            fptr.close()
+            win.close()
+            core.quit()
     stim=[]
     #stim.append(visual.Circle(win, pos=(-136,0.0), fillColor=[1, 1, 1], radius=4))
     stim.append(visual.Circle(win, pos=(-96,0.0), fillColor=[1, 1, 1], radius=7.5))
@@ -93,35 +99,41 @@ def runTrial(dur, stimCode):
 # fusion task trial
 #############
 
-def integrationTrial(soa,gPar):
-	[x,y]=[gPar['x'],gPar['y']]
-	target= random.choice(gPar['validTarget'])
-	[aDots, bDots]=support.intDotIndex(gPar,target)
-	dots=[]
-	for i in range(gPar['N']):
-		dots.append(visual.Circle(win, pos=(x[i],y[i]), fillColor=[0, -1, -1], radius=2.5))
-	allRed=visual.BufferImageStim(win,stim=dots)
-	adots=[]
-	alldots=[]
-	for i in range(len(aDots)):
-		adots.append(visual.Circle(win, pos=(x[aDots[i]],y[aDots[i]]), fillColor=[1, 1, 1], radius=5))
-		alldots.append(visual.Circle(win, pos=(x[aDots[i]],y[aDots[i]]), fillColor=[1, 1, 1], radius=5))
-	a=visual.BufferImageStim(win,stim=adots)
-	bdots=[]
-	for i in range(len(bDots)):
-		bdots.append(visual.Circle(win, pos=(x[bDots[i]],y[bDots[i]]), fillColor=[1, 1, 1], radius=5))
-		alldots.append(visual.Circle(win, pos=(x[bDots[i]],y[bDots[i]]), fillColor=[1, 1, 1], radius=5))
-	b=visual.BufferImageStim(win,stim=bdots)
-	frame = [fix, blank, a, blank, b, blank, allRed]
-	frameDurations = [120, 60, 5, soa, 5, 60, 1]
+def integrationTrial(soa, gPar):
 
-	stamps=elib.runFrames(win,frame,frameDurations,trialClock)
-	critTime=elib.actualFrameDurations(frameDurations,stamps)[3]
-	critPass=(np.absolute(soa/refreshRate-critTime)<.001)
-	resp=support.mouseResponse(mouse,win,gPar,frame[6])
-	correct=target==resp
-	#support.feedback("correct")
-	return([target,resp,correct,np.round(critTime,4),critPass])
+    keys = event.getKeys(timeStamped=trialClock)
+    for key, rt in keys:
+        if key == '9':
+            fptr.close()
+            win.close()
+            core.quit()
+
+    [x, y] = [gPar['x'], gPar['y']]
+    target = random.choice(gPar['validTarget'])
+    [aDots, bDots] = support.intDotIndex(gPar, target)
+    dots = []
+    for i in range(gPar['N']):
+        dots.append(visual.Circle(win, pos=(x[i], y[i]), fillColor=[0, -1, -1], radius=2.5))
+    allRed = visual.BufferImageStim(win, stim=dots)
+    adots = []
+    alldots = []
+    for i in range(len(aDots)):
+        adots.append(visual.Circle(win, pos=(x[aDots[i]], y[aDots[i]]), fillColor=[1, 1, 1], radius=5))
+        alldots.append(visual.Circle(win, pos=(x[aDots[i]], y[aDots[i]]), fillColor=[1, 1, 1], radius=5))
+    a = visual.BufferImageStim(win, stim=adots)
+    bdots = []
+    for i in range(len(bDots)):
+        bdots.append(visual.Circle(win, pos=(x[bDots[i]], y[bDots[i]]), fillColor=[1, 1, 1], radius=5))
+        alldots.append(visual.Circle(win, pos=(x[bDots[i]], y[bDots[i]]), fillColor=[1, 1, 1], radius=5))
+    b = visual.BufferImageStim(win, stim=bdots)
+    frame = [fix, blank, a, blank, b, blank, allRed]
+    frameDurations = [120, 60, 5, soa, 5, 60, 1]
+    stamps = elib.runFrames(win, frame, frameDurations, trialClock)
+    critTime = elib.actualFrameDurations(frameDurations, stamps)[3]
+    critPass = (np.absolute(soa / refreshRate - critTime) < .001)
+    resp = support.mouseResponse(mouse, win, gPar, frame[6])
+    correct = target == resp
+    return [target, resp, correct, np.round(critTime, 4), critPass]
 
 
 #############
