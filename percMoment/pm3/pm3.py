@@ -173,9 +173,9 @@ def runSimult(trialNum, block, prac=False):
                 core.wait(1)  # Display feedback for 1 second
         elif (correct)&(counter==1):
             support.feedback("correct")
-            dur = dur-2
-            if dur<0:
-                dur=0
+            dur = dur-1
+            if dur<1:
+                dur=1
             counter=0
             if prac:
                 feedback_text = 'Correct!'
@@ -184,9 +184,9 @@ def runSimult(trialNum, block, prac=False):
                 core.wait(1)  # Display feedback for 1 second
         else:
             support.feedback("incorrect")
-            dur = dur+2
-            if dur>8:
-                dur=8
+            dur = dur+1
+            #if dur>8:
+                #dur=8
             counter=0
             if prac:
                 feedback_text = 'Inorrect!'
@@ -215,9 +215,9 @@ def runInteg(trialNum, block, prac=False):
                 core.wait(1)  # Display feedback for 1 second
         elif (info[7]==True)&(counter==1):
             support.feedback("correct")
-            soa = soa+2
-            if soa>8:
-                soa=8
+            soa = soa+1
+           # if soa>8:
+             #   soa=8
             counter=0
             if prac:
                 feedback_text = 'Correct!'
