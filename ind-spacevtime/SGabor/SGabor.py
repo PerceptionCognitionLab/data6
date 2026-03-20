@@ -262,3 +262,9 @@ def runSG(session, pid, n_practices, n_trials):
     df = pd.DataFrame(data)
     df.to_csv(csv_path, index=False)
     
+runSG(0, 15, 5, 50)
+runSG(1, 15, 5, 50)
+runSG(2, 15, 5, 50)
+runSG(3, 15, 5, 50)
+runSG(4, 15, 5, 50)
+runSG(5, 15, 5, 50)
