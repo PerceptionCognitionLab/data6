@@ -258,7 +258,7 @@ def practiceInteg(soa):
             core.wait(1)  # Display feedback for 1 second
             
 def practiceSimult(soa):
-    for i in range(4):
+    for i in range(6):
         stim = random.choice([0,2])
         if stim == 0:
             stim = random.choice([0,1])
@@ -293,10 +293,11 @@ practiceInteg(3)
 support.instruct(win,"Good, now the practice will get a little bit harder. \n\nPress spacebar to continue.")
 runInteg(6, 0, prac=True)
 support.instruct(win,"Now we will practice the second task. \n\nPress spacebar to continue.")
-practiceSimult(8)
-practiceSimult(6)
+practiceSimult(12)
+practiceSimult(10)
 support.instruct(win,"Good, now the practice will get a little bit harder again. \n\nPress spacebar to continue.")
-runSimult(6, 0, prac=True)
+practiceSimult(8)
+runSimult(10, 0, prac=True)
 # start trials
 support.instruct(win,"Practice finished.\n\nPress space to start the first trial.")
 runInteg(50, 1)
