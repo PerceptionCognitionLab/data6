@@ -110,8 +110,7 @@ def showInstructions():
         win.flip()
 
 #trial and stimulus setup 
-Hz = 120
-OnFrame = [24, 12, 6] #frames [200ms, 100ms, 50ms]
+OnFrame = [24, 18, 12, 6] #frames [200ms, 100ms, 50ms]
 OffFrame = 3 #frames [25ms]
 InterBreakFrames = 120 #frames [1000ms]
 ShowingPerTrial = 20
@@ -258,7 +257,7 @@ def trialBreak():
     #60secs countdown 720 frames
     countdownFrames = 720
     for frame in range(countdownFrames):
-        remainingTime = (countdownFrames - frame) / Hz
+        remainingTime = (countdownFrames - frame) / refreshRate
         countdownDisplay = f"{remainingTime:.0f}"
         CountdownText.text = countdownDisplay
         
