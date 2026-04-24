@@ -6,15 +6,21 @@ sys.path.insert(0, 'E:/lib/data6')
 import expLib61 as el
 import pandas as pd
 import csv
+import numpy as np
 
 seed = random.randrange(51)
+rng = np.random.default_rng(seed)
+
 expName = 'EVIACU'
 refreshRate = 120
 dbConf=el.beta              
 el.setRefreshRate(refreshRate)
-[pid,_,_]=el.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
-csv_path = f"E:/data6/EVIACU/Data/{pid}.csv"
-data = pd.DataFrame(columns=["TrailNum", "Probability", "OnFrame", "OffFrame", "StartPos", "Truth", "Stimuli", "TerminateFrame", "Response"])
+[pid,sid,fname]=el.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
+csv_path = f"E:/data6/EVIACU/Data/ev4p{pid}s{sid}.csv"
+print(fname)
+
+XCols = [f"x{i}" for i in range(20)]
+data = pd.DataFrame(columns=["trl", "cond", "start", "isHead", *XCols, "rt", "resp"])
 data.to_csv(csv_path, index=False)
 
 
@@ -129,13 +135,13 @@ if Remainder > 0:
     StartIdx.extend(random.sample(list(range(AngleSpot)), Remainder))
 
 #generate single trial event
-def generateEvent(trialNum, probability, onFrames, offFrames, startIdx):
+def generateEvent(trialCount, onFrames, startIdx):
     if random.random() < 0.5:
-        pHead = probability
-        majorLabel = "head"
+        pHead = Proability
+        isHead = 1
     else:
-        pHead = 1 - probability
-        majorLabel = "tail"
+        pHead = 1 - Proability
+        isHead = 0
 
     events = []
     currentOnset = 0
@@ -148,10 +154,10 @@ def generateEvent(trialNum, probability, onFrames, offFrames, startIdx):
 
         if random.random() < pHead:
             stimulus = Head
-            label = "head"
+            label = 1
         else:
             stimulus = Tail
-            label = "tail"
+            label = 0
 
         events.append({
             "onsetFrame": onsetFrame,
@@ -162,26 +168,30 @@ def generateEvent(trialNum, probability, onFrames, offFrames, startIdx):
             "spotId": spot + 1
         })
 
-        currentOnset = offsetFrame + offFrames
+        currentOnset = offsetFrame + OffFrame
 
     trialData = {
-        "trialNum": trialNum,
-        "probability": probability,
-        "onFrame": onFrames,
-        "offFrame": offFrames,
+        "trial": trialCount,
         "startPos": startIdx,
-        "truth": majorLabel,
+        "isHead": isHead,
         "events": events,
         "terminateTrial": None,
         "response": None
     }
     return trialData
 
+#get stimulus at terminate frame
+def getStimulus(events, frame):
+    for idx, e in enumerate(events):
+        if e["onsetFrame"] <= frame < e["offsetFrame"]:
+            return idx + 1
+    return 20
+
 #run single trial and return trial data
-def trial(trialNum, probability, onFrames, offFrames, startIdx):
-    trialData = generateEvent(trialNum, probability, onFrames, offFrames, startIdx)
+def trial(trialCount, onFrames, startIdx):
+    trialData = generateEvent(trialCount, onFrames, startIdx)
     events = trialData["events"]
-    majorLabel = trialData["truth"]
+    isHead = trialData["isHead"]
     
     if events:
         trialFrames = events[-1]["offsetFrame"]
@@ -191,7 +201,7 @@ def trial(trialNum, probability, onFrames, offFrames, startIdx):
     #response setup
     response = None
     answered = False
-    frameResponded = 20
+    stimulusResponded = None
     
     #trial event loop
     frame = 0
@@ -202,14 +212,14 @@ def trial(trialNum, probability, onFrames, offFrames, startIdx):
                 win.close()
                 core.quit()
             if 'h' in keys:
-                response = 'head'
+                response = 1
                 answered = True
-                frameResponded = frame
+                stimulusResponded = getStimulus(events, frame)
                 break
             if 't' in keys:
-                response = 'tail'
+                response = 0
                 answered = True
-                frameResponded = frame
+                stimulusResponded = getStimulus(events, frame)
                 break
         
         now = frame
@@ -224,12 +234,12 @@ def trial(trialNum, probability, onFrames, offFrames, startIdx):
         frame += 1
     
     #append response data
-    trialData["terminateTrial"] = frameResponded
+    trialData["terminateStimulus"] = stimulusResponded
     trialData["response"] = response
 
     #sound feedback
     if answered:
-        if (response == 'head' and majorLabel == 'head') or (response == 'tail' and majorLabel == 'tail'):
+        if (response == 1 and isHead == 1) or (response == 0 and isHead == 0):
             CorrectSound.play()
         else:
             WrongSound.play()
@@ -289,7 +299,7 @@ event.clearEvents(eventType='keyboard')
 showInstructions()
 
 #trials
-# print("TrailNum, Probability, OnFrame, OffFrame, StartPos, Truth, Stimuli, TerminateFrame, Response")
+condition = []
 for t in range(TotalTrials):
     event.clearEvents(eventType='keyboard')
     
@@ -301,23 +311,31 @@ for t in range(TotalTrials):
     #determine OnFrame group
     onFrameGroupIndex = t // Trial
     currentOnFrames = OnFrame[onFrameGroupIndex]
-    currentOffFrames = OffFrame
     trialIndex = t % len(StartIdx)
     
-    trialData = trial(t+1, Proability, currentOnFrames, currentOffFrames, StartIdx[trialIndex])
-    stimulusStr = "".join([e["label"][0].upper() for e in trialData["events"]])
+    #determine condition group
+    if currentOnFrames not in condition:
+        condition.append(currentOnFrames)
+    conditionCount = condition.index(currentOnFrames) + 1
+    
+    trialData = trial(t+1, currentOnFrames, StartIdx[trialIndex])
+    stimulusStr = [e["label"] for e in trialData["events"]]
     
     with open(csv_path, "a", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([trialData['trialNum'],trialData['probability'],trialData['onFrame'], trialData['offFrame'], trialData['startPos'], trialData['truth'], stimulusStr, trialData['terminateTrial'], trialData['response']])
+        writer.writerow([trialData['trial'], conditionCount, trialData['startPos'], trialData['isHead'], *stimulusStr, trialData['terminateStimulus'], trialData['response']])
         f.close()
-    # print(f"{trialData['trialNum']}, {trialData['probability']}, {trialData['onFrame']}, {trialData['offFrame']}, {trialData['startPos']}, {trialData['truth']}, {stimulusStr}, {trialData['terminateTrial']}, {trialData['response']}")
     
     #break after each trial block
     if (t + 1) % Trial == 0 and t + 1 < TotalTrials:
         trialBreak()
 
+
+concern = el.getConcern(win)
+[resX,resY]=win.size
 win.close()
+el.stopExp(sid, refreshRate, resX, resY, seed, dbConf, concern)
+core.quit()
         
 
 
