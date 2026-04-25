@@ -16,11 +16,9 @@ refreshRate = 120
 dbConf=el.beta              
 el.setRefreshRate(refreshRate)
 [pid,sid,fname]=el.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
-csv_path = f"E:/data6/EVIACU/Data/ev4p{pid}s{sid}.csv"
-print(fname)
-
-XCols = [f"x{i}" for i in range(20)]
-data = pd.DataFrame(columns=["trl", "cond", "start", "isHead", *XCols, "rt", "resp"])
+csv_path = f"E:/data6/ev4/Data/ev4p{pid}s{sid}.csv"
+XCols = [f"x{i+1}" for i in range(20)]
+data = pd.DataFrame(columns=["pid", "sid", "trl", "cond", "start", "isHead", *XCols, "rt", "resp"])
 data.to_csv(csv_path, index=False)
 
 
@@ -120,7 +118,7 @@ OnFrame = [24, 18, 12, 6] #frames [200ms, 100ms, 50ms]
 OffFrame = 3 #frames [25ms]
 InterBreakFrames = 120 #frames [1000ms]
 ShowingPerTrial = 20
-Trial = 10
+Trial = 1
 TotalTrials = Trial * len(OnFrame)
 
 #startIdx setup
@@ -255,7 +253,7 @@ def trial(trialCount, onFrames, startIdx):
 
 #60 seconds break between trial blocks
 def trialBreak():
-    BreakTimeText = visual.TextStim(win, text="Break time", height=1, color=(1, 1, 1), wrapWidth=20)
+    BreakTimeText = visual.TextStim(win, text="Break Time", height=1, color=(1, 1, 1), wrapWidth=20)
     CountdownText = visual.TextStim(win, text="", height=1.5, color=(1, 1, 1), wrapWidth=20)
     ContinueText = visual.TextStim(win, text="Press SPACE to continue", height=1, color=(1, 1, 1), wrapWidth=20)
     
@@ -265,7 +263,7 @@ def trialBreak():
         win.flip()
     
     #60secs countdown 720 frames
-    countdownFrames = 720
+    countdownFrames = 1
     for frame in range(countdownFrames):
         remainingTime = (countdownFrames - frame) / refreshRate
         countdownDisplay = f"{remainingTime:.0f}"
@@ -289,6 +287,41 @@ def trialBreak():
         ContinueText.draw()
         win.flip()
         
+def getConcern():
+    thankyou = visual.TextStim(win, text="Experiment ends. \nPlease contact the experimenter!", height=1, color=(1, 1, 1), wrapWidth=20)
+    thankyou.draw()
+    win.flip()
+    event.waitKeys(keyList=["space"])
+    
+    question = visual.TextStim(win, text="Experimenter please type any concerns regarding the experiment below: ", pos=(0, 5), height=1, color=(1, 1, 1), wrapWidth=20)
+    answer = visual.TextStim(win, text="", height=1, color=(1, 1, 1), wrapWidth=20)
+
+    typedAnswer = ""
+
+    while True:
+        keys = event.getKeys()
+        for key in keys:
+            if 'escape' in keys:
+                win.close()
+                core.quit()
+            elif key == "return":
+                break
+            elif key == "backspace":
+                typedAnswer = typedAnswer[:-1]
+            elif key == "space":
+                typedAnswer += " "
+            elif len(key) == 1:
+                typedAnswer += key
+        if "return" in keys:
+            break
+        answer.text = typedAnswer
+        question.draw()
+        answer.draw()
+        win.flip()
+    
+    concernText = typedAnswer
+    return concernText
+
 
 #------
 #main
@@ -323,19 +356,16 @@ for t in range(TotalTrials):
     
     with open(csv_path, "a", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([trialData['trial'], conditionCount, trialData['startPos'], trialData['isHead'], *stimulusStr, trialData['terminateStimulus'], trialData['response']])
+        writer.writerow([pid, sid, trialData['trial'], conditionCount, trialData['startPos']+1, trialData['isHead'], *stimulusStr, trialData['terminateStimulus'], trialData['response']])
         f.close()
     
     #break after each trial block
     if (t + 1) % Trial == 0 and t + 1 < TotalTrials:
         trialBreak()
 
-
-concern = el.getConcern(win)
+concern = getConcern()
 [resX,resY]=win.size
 win.close()
 el.stopExp(sid, refreshRate, resX, resY, seed, dbConf, concern)
 core.quit()
         
-
-
