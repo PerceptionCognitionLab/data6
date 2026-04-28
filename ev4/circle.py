@@ -118,7 +118,7 @@ OnFrame = [24, 18, 12, 6] #frames [200ms, 100ms, 50ms]
 OffFrame = 3 #frames [25ms]
 InterBreakFrames = 120 #frames [1000ms]
 ShowingPerTrial = 20
-Trial = 1
+Trial = 75
 TotalTrials = Trial * len(OnFrame)
 
 #startIdx setup
@@ -181,7 +181,7 @@ def generateEvent(trialCount, onFrames, startIdx):
 #get stimulus at terminate frame
 def getStimulus(events, frame):
     for idx, e in enumerate(events):
-        if e["onsetFrame"] <= frame < e["offsetFrame"]:
+        if e["onsetFrame"] <= frame <= e["offsetFrame"]:
             return idx + 1
     return 20
 
@@ -257,13 +257,13 @@ def trialBreak():
     CountdownText = visual.TextStim(win, text="", height=1.5, color=(1, 1, 1), wrapWidth=20)
     ContinueText = visual.TextStim(win, text="Press SPACE to continue", height=1, color=(1, 1, 1), wrapWidth=20)
     
-    #"break time" 120 frames (1secs)
-    for frame in range(240):
+    #breaktime 120 frames (1secs)
+    for frame in range(120):
         BreakTimeText.draw()
         win.flip()
     
-    #60secs countdown 720 frames
-    countdownFrames = 1
+    #60secs countdown 7200 frames
+    countdownFrames = 7200
     for frame in range(countdownFrames):
         remainingTime = (countdownFrames - frame) / refreshRate
         countdownDisplay = f"{remainingTime:.0f}"
@@ -293,7 +293,7 @@ def getConcern():
     win.flip()
     event.waitKeys(keyList=["space"])
     
-    question = visual.TextStim(win, text="Experimenter please type any concerns regarding the experiment below: ", pos=(0, 5), height=1, color=(1, 1, 1), wrapWidth=20)
+    question = visual.TextStim(win, text="Experimenter notes: ", pos=(0, 5), height=1, color=(1, 1, 1), wrapWidth=20)
     answer = visual.TextStim(win, text="", height=1, color=(1, 1, 1), wrapWidth=20)
 
     typedAnswer = ""
