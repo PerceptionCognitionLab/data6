@@ -7,10 +7,13 @@ import expLib61 as el
 import pandas as pd
 import csv
 import numpy as np
+import pyxid2
+import time
 
 seed = random.randrange(51)
 rng = np.random.default_rng(seed)
 
+#file setup
 expName = 'EVIACU'
 refreshRate = 120
 dbConf=el.beta              
@@ -114,11 +117,11 @@ def showInstructions():
         win.flip()
 
 #trial and stimulus setup 
-OnFrame = [24, 18, 12, 6] #frames [200ms, 100ms, 50ms]
+OnFrame = [18, 12, 9] #frames [150ms, 100ms, 75ms]
 OffFrame = 3 #frames [25ms]
 InterBreakFrames = 120 #frames [1000ms]
 ShowingPerTrial = 20
-Trial = 75
+Trial = 1
 TotalTrials = Trial * len(OnFrame)
 
 #startIdx setup
@@ -263,7 +266,7 @@ def trialBreak():
         win.flip()
     
     #60secs countdown 7200 frames
-    countdownFrames = 7200
+    countdownFrames = 1
     for frame in range(countdownFrames):
         remainingTime = (countdownFrames - frame) / refreshRate
         countdownDisplay = f"{remainingTime:.0f}"
