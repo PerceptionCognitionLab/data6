@@ -21,7 +21,7 @@ el.setRefreshRate(refreshRate)
 [pid,sid,fname]=el.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
 csv_path = f"E:/data6/ev4/Data/ev4p{pid}s{sid}.csv"
 XCols = [f"x{i+1}" for i in range(20)]
-data = pd.DataFrame(columns=["pid", "sid", "trl", "cond", "start", "isHead", *XCols, "rt", "resp"])
+data = pd.DataFrame(columns=["pid", "sid", "trl", "cond", "isHead", *XCols, "rt", "resp"])
 data.to_csv(csv_path, index=False)
 
 
@@ -31,6 +31,16 @@ mon.setWidth(29.5)
 mon.setSizePix((1440,900))
 mon.saveMon()   
 win = visual.Window(fullscr=True, monitor=mon, units="cm", color=(-1,-1,-1))
+
+#device setup
+Device = pyxid2.get_xid_devices()
+Dev = Device[0]
+EscapeKey = 1
+Resp1Key = 3
+Resp2Key = 4
+SpaceKey = 5
+#need get key function(unlimited), only updated key in instruction(), some in trial()
+
 
 #sound setup
 CorrectSound = sound.Sound(value=880, secs=0.15)
@@ -97,17 +107,16 @@ def showInstructions():
         pos=(0, -2)
     )
     
+    Dev.flush_serial_buffer()
+    
     waiting = True
     while waiting:
-        keys = event.getKeys(keyList=['space', 'escape'])
-        if keys:
-            if 'escape' in keys:
-                waiting = False
-                win.close()
-                core.quit()
-            if 'space' in keys:
-                waiting = False
-        
+        keys = event.getKeys(keyList=[SpaceKey, EscapeKey])
+        if keys == EscapeKey:
+            win.close()
+            core.quit()
+        elif keys == SpaceKey:
+            waiting = False
 
         headLabel.draw()
         tailLabel.draw()
@@ -124,19 +133,8 @@ ShowingPerTrial = 20
 Trial = 1
 TotalTrials = Trial * len(OnFrame)
 
-#startIdx setup
-StartIdx = []
-FullBlock = Trial // AngleSpot
-Remainder = Trial % AngleSpot
-for _ in range(FullBlock):
-    block = list(range(AngleSpot))
-    random.shuffle(block)
-    StartIdx.extend(block)
-if Remainder > 0:
-    StartIdx.extend(random.sample(list(range(AngleSpot)), Remainder))
-
 #generate single trial event
-def generateEvent(trialCount, onFrames, startIdx):
+def generateEvent(trialCount, onFrames):
     if random.random() < 0.5:
         pHead = Proability
         isHead = 1
@@ -144,13 +142,20 @@ def generateEvent(trialCount, onFrames, startIdx):
         pHead = 1 - Proability
         isHead = 0
 
+    positionOrder = []
+    while len(positionOrder) < ShowingPerTrial:
+        block = list(range(AngleSpot))
+        random.shuffle(block)
+        positionOrder.extend(block)
+    positionOrder = positionOrder[:ShowingPerTrial]
+
     events = []
     currentOnset = 0
     for i in range(ShowingPerTrial):
         onsetFrame = currentOnset
         offsetFrame = onsetFrame + onFrames
 
-        spot = (startIdx + i) % AngleSpot
+        spot = positionOrder[i]
         position = spots[spot]
 
         if random.random() < pHead:
@@ -173,7 +178,6 @@ def generateEvent(trialCount, onFrames, startIdx):
 
     trialData = {
         "trial": trialCount,
-        "startPos": startIdx,
         "isHead": isHead,
         "events": events,
         "terminateTrial": None,
@@ -189,8 +193,8 @@ def getStimulus(events, frame):
     return 20
 
 #run single trial and return trial data
-def trial(trialCount, onFrames, startIdx):
-    trialData = generateEvent(trialCount, onFrames, startIdx)
+def trial(trialCount, onFrames):
+    trialData = generateEvent(trialCount, onFrames)
     events = trialData["events"]
     isHead = trialData["isHead"]
     
@@ -207,7 +211,7 @@ def trial(trialCount, onFrames, startIdx):
     #trial event loop
     frame = 0
     while frame < trialFrames:
-        keys = event.getKeys(keyList=['h','t','escape'])
+        keys = event.getKeys(keyList=[])
         if keys:
             if 'escape' in keys:
                 win.close()
@@ -347,19 +351,18 @@ for t in range(TotalTrials):
     #determine OnFrame group
     onFrameGroupIndex = t // Trial
     currentOnFrames = OnFrame[onFrameGroupIndex]
-    trialIndex = t % len(StartIdx)
     
     #determine condition group
     if currentOnFrames not in condition:
         condition.append(currentOnFrames)
     conditionCount = condition.index(currentOnFrames) + 1
     
-    trialData = trial(t+1, currentOnFrames, StartIdx[trialIndex])
+    trialData = trial(t+1, currentOnFrames)
     stimulusStr = [e["label"] for e in trialData["events"]]
     
     with open(csv_path, "a", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([pid, sid, trialData['trial'], conditionCount, trialData['startPos']+1, trialData['isHead'], *stimulusStr, trialData['terminateStimulus'], trialData['response']])
+        writer.writerow([pid, sid, trialData['trial'], conditionCount, trialData['isHead'], *stimulusStr, trialData['terminateStimulus'], trialData['response']])
         f.close()
     
     #break after each trial block
