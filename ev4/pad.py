@@ -8,7 +8,6 @@ import pandas as pd
 import csv
 import numpy as np
 import pyxid2
-import time
 
 seed = random.randrange(51)
 rng = np.random.default_rng(seed)
@@ -31,6 +30,24 @@ mon.setWidth(29.5)
 mon.setSizePix((1440,900))
 mon.saveMon()   
 win = visual.Window(fullscr=True, monitor=mon, units="cm", color=(-1,-1,-1))
+
+#device setup
+Device = pyxid2.get_xid_devices()
+print(Device)
+Dev = Device[0]
+EscapeKey = 1
+Resp1Key = 3
+Resp0Key = 4
+SpaceKey = 5
+def getPadKeys(validKeys = None):
+    Dev.poll_for_response()
+    if Dev.has_response():
+        keyResponse = Dev.get_next_response()
+        if keyResponse['pressed']:
+            key = keyResponse["key"]
+            if key in validKeys:
+                return key
+    return None
 
 #sound setup
 CorrectSound = sound.Sound(value=880, secs=0.15)
@@ -97,17 +114,16 @@ def showInstructions():
         pos=(0, -2)
     )
     
+    Dev.flush_serial_buffer()
+    
     waiting = True
     while waiting:
-        keys = event.getKeys(keyList=['space', 'escape'])
-        if keys:
-            if 'escape' in keys:
-                waiting = False
-                win.close()
-                core.quit()
-            if 'space' in keys:
-                waiting = False
-        
+        key = getPadKeys([SpaceKey, EscapeKey])
+        if key == EscapeKey:
+            win.close()
+            core.quit()
+        elif key == SpaceKey:
+            waiting = False
 
         headLabel.draw()
         tailLabel.draw()
@@ -139,7 +155,7 @@ def generateEvent(trialCount, onFrames):
         random.shuffle(block)
         positionOrder.extend(block)
     positionOrder = positionOrder[:ShowingPerTrial]
-    
+
     events = []
     currentOnset = 0
     for i in range(ShowingPerTrial):
@@ -201,23 +217,23 @@ def trial(trialCount, onFrames):
     
     #trial event loop
     frame = 0
+    Dev.flush_serial_buffer()
+    Dev.reset_timer()
     while frame < trialFrames:
-        keys = event.getKeys(keyList=['h','t','escape'])
-        if keys:
-            if 'escape' in keys:
-                win.close()
-                core.quit()
-            if 'h' in keys:
-                response = 1
-                answered = True
-                stimulusResponded = getStimulus(events, frame)
-                break
-            if 't' in keys:
-                response = 0
-                answered = True
-                stimulusResponded = getStimulus(events, frame)
-                break
-        
+        key = getPadKeys([EscapeKey, Resp1Key, Resp0Key])
+        if key == EscapeKey:
+            win.close()
+            core.quit()
+        if key == Resp1Key:
+            response = 1
+            answered = True
+            stimulusResponded = getStimulus(events, frame)
+            break
+        if key == Resp0Key:
+            response = 0
+            answered = True
+            stimulusResponded = getStimulus(events, frame)
+            break    
         now = frame
         drawCircle()
 
@@ -270,18 +286,16 @@ def trialBreak():
         CountdownText.draw()
         win.flip()
     
-    #"press space to continue"
-    event.clearEvents(eventType='keyboard')
+    #get space or escape
+    Dev.flush_serial_buffer()
     waiting = True
     while waiting:
-        keys = event.getKeys(keyList=['space', 'escape'])
-        if keys:
-            if 'escape' in keys:
-                win.close()
-                core.quit()
-            if 'space' in keys:
-                waiting = False
-        
+        key = getPadKeys([SpaceKey, EscapeKey])
+        if key == EscapeKey:
+            win.close()
+            core.quit()
+        if key == SpaceKey:
+            waiting = False
         ContinueText.draw()
         win.flip()
         
@@ -324,7 +338,7 @@ def getConcern():
 #------
 #main
 #------
-event.clearEvents(eventType='keyboard')
+Dev.flush_serial_buffer()
 
 #instruction
 showInstructions()
@@ -332,7 +346,7 @@ showInstructions()
 #trials
 condition = []
 for t in range(TotalTrials):
-    event.clearEvents(eventType='keyboard')
+    Dev.flush_serial_buffer()
     
     #fixation
     drawCircle()
