@@ -1,6 +1,6 @@
 import sys
 import random
-from psychopy import core, visual
+from psychopy import core, visual, event
 from psychopy.hardware import keyboard
 
 # Steps we did to actually run the code
@@ -40,24 +40,24 @@ rand_letters = random.sample(list_letters,4)
 center_rectangle = visual.Rect(win, width = 100, height=100, fillColor = [1,1,1], pos = (0,0))
 #center_rectangle.draw()
 
-rectangle2 = visual.Rect(win, width=100, height=100, fillColor=[1,1,1], pos =(300,0))
+rectangle4 = visual.Rect(win, width=100, height=100, fillColor=[1,1,1], pos =(300,0))
+#rectangle4.draw()
+
+rectangle1 = visual.Rect(win, width=100, height=100, fillColor=[1,1,1], pos= (-300,0))
+#rectangle1.draw()
+
+rectangle2 = visual.Rect(win, width=100, height=100, fillColor= [1,1,1], pos=(-212, 212))
 #rectangle2.draw()
 
-rectangle3 = visual.Rect(win, width=100, height=100, fillColor=[1,1,1], pos= (-300,0))
+rectangle3 = visual.Rect(win, width=100, height=100, fillColor= [1,1,1], pos=(212, 212))
 #rectangle3.draw()
-
-diag1_rectangle = visual.Rect(win, width=100, height=100, fillColor= [1,1,1], pos=(-212, 212))
-#diag1_rectangle.draw()
-
-diag2_rectangle = visual.Rect(win, width=100, height=100, fillColor= [1,1,1], pos=(212, 212))
-#diag2_rectangle.draw()
 
 def draw_rectangles():
     center_rectangle.draw()
+    rectangle4.draw()
+    rectangle1.draw()
     rectangle2.draw()
     rectangle3.draw()
-    diag1_rectangle.draw()
-    diag2_rectangle.draw()
 
 draw_rectangles()
 
@@ -66,16 +66,16 @@ mult_num = random.randint(1,4)
 number = visual.TextStim(win, rand_num * mult_num, height= 40, color=[-1,-1,-1], pos = (0,0))
 number.draw()
 
-#why doesn't this wait?? It should wait for some time before showning letters
+
 win.flip()
 core.wait(stimulus_time)
 
 draw_rectangles()
 
-letter1 = visual.TextStim(win, rand_letters[0],height= 40, color=[-1,-1,-1], pos = (300,0))
-letter2 = visual.TextStim(win, rand_letters[1],height= 40, color=[-1,-1,-1], pos = (-300,0))
-letter3 = visual.TextStim(win, rand_letters[2],height= 40, color=[-1,-1,-1], pos = (-212,212))
-letter4 = visual.TextStim(win, rand_letters[3],height= 40, color=[-1,-1,-1], pos = (212,212))
+letter1 = visual.TextStim(win, rand_letters[0],height= 40, color=[-1,-1,-1], pos = (-300,0))
+letter2 = visual.TextStim(win, rand_letters[1],height= 40, color=[-1,-1,-1], pos = (-212,212))
+letter3 = visual.TextStim(win, rand_letters[2],height= 40, color=[-1,-1,-1], pos = (212,212))
+letter4 = visual.TextStim(win, rand_letters[3],height= 40, color=[-1,-1,-1], pos = (300,0))
 
 letter1.draw()
 letter2.draw()
@@ -85,17 +85,33 @@ letter4.draw()
 win.flip()
 core.wait(options_time)
 
+correct_answer = rand_letters[mult_num-1]
 
-#trying to get participant response
-kb = keyboard.Keyboard()
-keys = kb.getKeys()
 
-prompt = visual.TextStim(win, "Please Type Letter",height= 40, color=[-1,-1,-1], pos = (0,0))
+
+
+prompt = visual.TextStim(win, "Press the Letter",height= 40, color=[1,1,1], pos = (0,0))
 prompt.draw()
 
+win.flip()
+#from chat:
+event.clearEvents(eventType = 'keyboard')
 
+#WHYYYYY WHAT DO YOU WANT FROM MEEEEE OTL
+#how does one get the response from the keyboard :c
+keys = event.waitKeys(keyList = list_letters)
+response = visual.TextStim(win, keys ,height= 40, color=[0,1,0], pos = (0,0))
+response.draw()
 
+#if correct_answer in keys:
+#    correct_text =  visual.TextStim(win, "Correct!",height= 40, color=[0,1,0], pos = (0,0))
+#    correct_text.draw()
+#else:
+#    wrong_text = visual.TextStim(win, "Incorrect",height= 40, color=[1,0,0], pos = (0,0))
+#    wrong_text.draw()
 
+win.flip()
+core.wait(4)
 
 
 win.close()
