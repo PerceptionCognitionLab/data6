@@ -1,13 +1,32 @@
-from psychopy import monitors, visual, core, event, sound
+import pyxid2
+
+#device setup
+Device = pyxid2.get_xid_devices()
+print(Device)
+Dev = Device[0]
+EscapeKey = 1
+Resp1Key = 3
+Resp0Key = 4
+SpaceKey = 5
+def getPadKeys(validKeys = None):
+    Dev.poll_for_response()
+    if Dev.has_response():
+        keyResponse = Dev.get_next_response()
+        if keyResponse['pressed']:
+            key = keyResponse["key"]
+            if key in validKeys:
+                return key
+    return None
+
+from psychopy import monitors, visual, core, sound
 import random
 import math
-import sys
-sys.path.insert(0, 'E:/lib/data6')
-import expLib61 as el
 import pandas as pd
 import csv
 import numpy as np
-import pyxid2
+import sys
+sys.path.insert(0, 'E:/lib/data6')
+import expLib61 as el
 
 seed = random.randrange(51)
 rng = np.random.default_rng(seed)
@@ -29,29 +48,7 @@ mon = monitors.Monitor("monitor")
 mon.setWidth(29.5)
 mon.setSizePix((1440,900))
 mon.saveMon()   
-win = visual.Window(fullscr=True, monitor=mon, units="cm", color=(-1,-1,-1))
-
-#device setup
-Device = pyxid2.get_xid_devices()
-print(Device)
-Dev = Device[0]
-EscapeKey = 1
-Resp1Key = 3
-Resp0Key = 4
-SpaceKey = 5
-def getPadKeys(validKeys = None):
-    Dev.poll_for_response()
-    if Dev.has_response():
-        keyResponse = Dev.get_next_response()
-        if keyResponse['pressed']:
-            key = keyResponse["key"]
-            if key in validKeys:
-                return key
-    return None
-
-#sound setup
-CorrectSound = sound.Sound(value=880, secs=0.15)
-WrongSound = sound.Sound(value=440, secs=0.15)
+win = visual.Window(fullscr=False, monitor=mon, units="cm", color=(-1,-1,-1))
 
 #circumference & fixation setup
 Radius = 3.0 #cm
@@ -77,7 +74,20 @@ Head = visual.ImageStim(win, image="Stimulus/head.jpg", size=(Coin, Coin))
 Tail = visual.ImageStim(win, image="Stimulus/tail.jpg", size=(Coin, Coin))
 Proability = 0.65
 
-#instruction setup
+#trial and stimulus setup 
+OnFrame = [18, 15] #frames [150ms, 125ms]
+OffFrame = 3 #frames [25ms]
+InterBreakFrames = 120 #frames [1000ms]
+ShowingPerTrial = 20
+Trial = 1
+TotalTrials = Trial * len(OnFrame)
+
+#feedback setup
+CorrectSound = sound.Sound(value=880, secs=0.15)
+WrongSound = sound.Sound(value=440, secs=0.15)
+Feedback = visual.TextStim(win, text="", pos=(0, 1), height=0.8, color=(1, 1, 1))
+
+#instruction
 def showInstructions():
     headLabel = visual.TextStim(
         win,
@@ -131,14 +141,6 @@ def showInstructions():
         tailDisplay.draw()
         instruction.draw()
         win.flip()
-
-#trial and stimulus setup 
-OnFrame = [18, 15] #frames [150ms, 125ms]
-OffFrame = 3 #frames [25ms]
-InterBreakFrames = 120 #frames [1000ms]
-ShowingPerTrial = 20
-Trial = 1
-TotalTrials = Trial * len(OnFrame)
 
 #generate single trial event
 def generateEvent(trialCount, onFrames):
@@ -252,8 +254,12 @@ def trial(trialCount, onFrames):
     #sound feedback
     if answered:
         if (response == 1 and isHead == 1) or (response == 0 and isHead == 0):
+            Feedback.text = "Correct"
+            Feedback.color = (0, 1, 0)
             CorrectSound.play()
         else:
+            Feedback.text = "Incorrect"
+            Feedback.color = (1, 0, 0)
             WrongSound.play()
     else:
         WrongSound.play()
@@ -261,6 +267,7 @@ def trial(trialCount, onFrames):
     #inter-trial break
     for _ in range(InterBreakFrames):
         drawCircle()
+        Feedback.draw()
         win.flip()
     
     return trialData
@@ -286,7 +293,6 @@ def trialBreak():
         CountdownText.draw()
         win.flip()
     
-    #get space or escape
     Dev.flush_serial_buffer()
     waiting = True
     while waiting:
@@ -301,36 +307,48 @@ def trialBreak():
         
 def getConcern():
     thankyou = visual.TextStim(win, text="Experiment ends. \nPlease contact the experimenter!", height=1, color=(1, 1, 1), wrapWidth=20)
-    thankyou.draw()
-    win.flip()
-    event.waitKeys(keyList=["space"])
+#    thankyou.draw()
+#    win.flip()
+#    event.waitKeys(keyList=["space"])
     
-    question = visual.TextStim(win, text="Experimenter notes: ", pos=(0, 5), height=1, color=(1, 1, 1), wrapWidth=20)
-    answer = visual.TextStim(win, text="", height=1, color=(1, 1, 1), wrapWidth=20)
+#    question = visual.TextStim(win, text="Experimenter notes: ", pos=(0, 5), height=1, color=(1, 1, 1), wrapWidth=20)
+#    answer = visual.TextStim(win, text="", height=1, color=(1, 1, 1), wrapWidth=20)
 
     typedAnswer = ""
 
-    while True:
-        keys = event.getKeys()
-        for key in keys:
-            if 'escape' in keys:
-                win.close()
-                core.quit()
-            elif key == "return":
-                break
-            elif key == "backspace":
-                typedAnswer = typedAnswer[:-1]
-            elif key == "space":
-                typedAnswer += " "
-            elif len(key) == 1:
-                typedAnswer += key
-        if "return" in keys:
-            break
-        answer.text = typedAnswer
-        question.draw()
-        answer.draw()
-        win.flip()
+#    while True:
+#        keys = event.getKeys()
+#        for key in keys:
+#            if 'escape' in keys:
+#                win.close()
+#                core.quit()
+#            elif key == "return":
+#                break
+#            elif key == "backspace":
+#                typedAnswer = typedAnswer[:-1]
+#            elif key == "space":
+#                typedAnswer += " "
+#            elif len(key) == 1:
+#                typedAnswer += key
+#        if "return" in keys:
+#            break
+#        answer.text = typedAnswer
+#        question.draw()
+#        answer.draw()
+#        win.flip()
     
+
+    Dev.flush_serial_buffer()
+    waiting = True
+    while waiting:
+        key = getPadKeys([SpaceKey, EscapeKey])
+        if key == EscapeKey:
+            win.close()
+            core.quit()
+        if key == SpaceKey:
+            waiting = False
+        thankyou.draw()
+        win.flip()
     concernText = typedAnswer
     return concernText
 
@@ -376,6 +394,9 @@ for t in range(TotalTrials):
 
 concern = getConcern()
 [resX,resY]=win.size
+
+Dev.con.flush()
+Dev.con.close()
 win.close()
 el.stopExp(sid, refreshRate, resX, resY, seed, dbConf, concern)
 core.quit()
