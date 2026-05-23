@@ -4,7 +4,7 @@ import pyxid2
 Device = pyxid2.get_xid_devices()
 print(Device)
 Dev = Device[0]
-EscapeKey = 1
+EscapeKey = 0
 Resp1Key = 3
 Resp0Key = 4
 SpaceKey = 5
@@ -64,9 +64,10 @@ Circumference = visual.Circle(win, radius=Radius, lineColor=(1,1,1), fillColor=N
 
 Fixation = visual.TextStim(win, text="+", pos=(0, 0), height=1, color=(1, 1, 1), colorSpace="rgb")
 
+def drawFixation():
+    Fixation.draw()
 def drawCircle():
     Circumference.draw()
-    Fixation.draw()
 
 #coin setup
 Coin = 1.6 #cm
@@ -75,17 +76,17 @@ Tail = visual.ImageStim(win, image="Stimulus/tail.jpg", size=(Coin, Coin))
 Proability = 0.65
 
 #trial and stimulus setup 
-OnFrame = [18, 15] #frames [150ms, 125ms]
+OnFrame = [15, 15, 15, 15, 15] #frames [150ms, 125ms]
 OffFrame = 3 #frames [25ms]
 InterBreakFrames = 120 #frames [1000ms]
-ShowingPerTrial = 20
-Trial = 1
+ShowingPerTrial = 50
+Trial = 3
 TotalTrials = Trial * len(OnFrame)
 
 #feedback setup
 CorrectSound = sound.Sound(value=880, secs=0.15)
 WrongSound = sound.Sound(value=440, secs=0.15)
-Feedback = visual.TextStim(win, text="", pos=(0, 1), height=0.8, color=(1, 1, 1))
+Feedback = visual.TextStim(win, text="", pos=(0, 0), height=0.8, color=(1, 1, 1))
 
 #instruction
 def showInstructions():
@@ -199,7 +200,7 @@ def getStimulus(events, frame):
     for idx, e in enumerate(events):
         if e["onsetFrame"] <= frame <= e["offsetFrame"]:
             return idx + 1
-    return 20
+    return -1
 
 #run single trial and return trial data
 def trial(trialCount, onFrames):
@@ -238,6 +239,7 @@ def trial(trialCount, onFrames):
             break    
         now = frame
         drawCircle()
+        drawFixation()
 
         #draw stimulus
         for e in events:
@@ -254,11 +256,11 @@ def trial(trialCount, onFrames):
     #sound feedback
     if answered:
         if (response == 1 and isHead == 1) or (response == 0 and isHead == 0):
-            Feedback.text = "Correct"
+            Feedback.text = "✓"
             Feedback.color = (0, 1, 0)
             CorrectSound.play()
         else:
-            Feedback.text = "Incorrect"
+            Feedback.text = "X"
             Feedback.color = (1, 0, 0)
             WrongSound.play()
     else:
@@ -368,6 +370,7 @@ for t in range(TotalTrials):
     
     #fixation
     drawCircle()
+    drawFixation()
     win.flip()
     core.wait(1)
 

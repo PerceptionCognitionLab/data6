@@ -17,7 +17,7 @@ dev.reset_timer() # reset the timer to 0 ms
 
 start = time.time() #returns the current time in seconds 
 
-while time.time() - start < 5:
+while time.time() - start < 3:
     dev.poll_for_response() # check for responses  
     if dev.has_response(): # do we have responses in the queue
         response = dev.get_next_response() # returns a dictionary with response info
