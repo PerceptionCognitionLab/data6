@@ -32,7 +32,7 @@ core.wait(1)
 stimulus_time = 2
 options_time = 2
 
-list_letters = ["A","S","D","F","G", "H", "J", "K", "L"]
+list_letters = ["a","s","d","f","g", "h", "j", "k", "l"]
 rand_letters = random.sample(list_letters,4)
 
 
@@ -45,7 +45,7 @@ rectangle4 = visual.Rect(win, width=100, height=100, fillColor=[1,1,1], pos =(30
 
 rectangle1 = visual.Rect(win, width=100, height=100, fillColor=[1,1,1], pos= (-300,0))
 #rectangle1.draw()
-
+       
 rectangle2 = visual.Rect(win, width=100, height=100, fillColor= [1,1,1], pos=(-212, 212))
 #rectangle2.draw()
 
@@ -90,27 +90,23 @@ correct_answer = rand_letters[mult_num-1]
 
 
 
-prompt = visual.TextStim(win, "Press the Letter",height= 40, color=[1,1,1], pos = (0,0))
+prompt = visual.TextStim(win, "enter response",height= 40, color=[1,1,1], pos = (0,0))
 prompt.draw()
-
 win.flip()
-#from chat:
-event.clearEvents(eventType = 'keyboard')
 
-#WHYYYYY WHAT DO YOU WANT FROM MEEEEE OTL
-#how does one get the response from the keyboard :c
 keys = event.waitKeys(keyList = list_letters)
-response = visual.TextStim(win, keys ,height= 40, color=[0,1,0], pos = (0,0))
-response.draw()
+win.close()
+print(keys)
 
-#if correct_answer in keys:
-#    correct_text =  visual.TextStim(win, "Correct!",height= 40, color=[0,1,0], pos = (0,0))
-#    correct_text.draw()
-#else:
-#    wrong_text = visual.TextStim(win, "Incorrect",height= 40, color=[1,0,0], pos = (0,0))
-#    wrong_text.draw()
+if correct_answer in keys:
+    correct_text =  visual.TextStim(win, "Correct!",height= 40, color=[0,1,0], pos = (0,0))
+    correct_text.draw()
+   
+else:
+    wrong_text = visual.TextStim(win, "Incorrect",height= 40, color=[1,0,0], pos = (0,0))
+    wrong_text.draw()
+  
 
-win.flip()
 core.wait(4)
 
 
