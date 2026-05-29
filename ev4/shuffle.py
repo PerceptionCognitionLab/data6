@@ -117,7 +117,7 @@ def showInstructions():
         win.flip()
 
 #trial and stimulus setup 
-OnFrame = [12, 12, 12] #frames [150ms, 125ms]
+OnFrame = [12, 12, 12] #frames [100ms]
 OffFrame = 3 #frames [25ms]
 InterBreakFrames = 120 #frames [1000ms]
 ShowingPerTrial = 20

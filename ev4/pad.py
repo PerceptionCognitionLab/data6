@@ -18,6 +18,16 @@ def getPadKeys(validKeys = None):
                 return key
     return None
 
+def getPadKeysTime(validKeys = None):
+    Dev.poll_for_response()
+    if Dev.has_response():
+        keyResponse = Dev.get_next_response()
+        if keyResponse['pressed']:
+            key = keyResponse["key"]
+            if key in validKeys:
+                return key, keyResponse["time"]
+    return None, None
+
 from psychopy import monitors, visual, core, sound
 import random
 import math
@@ -38,7 +48,7 @@ dbConf=el.beta
 el.setRefreshRate(refreshRate)
 [pid,sid,fname]=el.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
 csv_path = f"E:/data6/ev4/Data/ev4p{pid}s{sid}.csv"
-XCols = [f"x{i+1}" for i in range(20)]
+XCols = [f"x{i+1}" for i in range(50)]
 data = pd.DataFrame(columns=["pid", "sid", "trl", "cond", "isHead", *XCols, "rt", "resp"])
 data.to_csv(csv_path, index=False)
 
@@ -48,7 +58,7 @@ mon = monitors.Monitor("monitor")
 mon.setWidth(29.5)
 mon.setSizePix((1440,900))
 mon.saveMon()   
-win = visual.Window(fullscr=False, monitor=mon, units="cm", color=(-1,-1,-1))
+win = visual.Window(fullscr=True, monitor=mon, units="cm", color=(-1,-1,-1))
 
 #circumference & fixation setup
 Radius = 3.0 #cm
@@ -76,11 +86,11 @@ Tail = visual.ImageStim(win, image="Stimulus/tail.jpg", size=(Coin, Coin))
 Proability = 0.65
 
 #trial and stimulus setup 
-OnFrame = [15, 15, 15, 15, 15] #frames [150ms, 125ms]
+OnFrame = [15, 15, 15, 15, 15] #frames [125ms]
 OffFrame = 3 #frames [25ms]
 InterBreakFrames = 120 #frames [1000ms]
 ShowingPerTrial = 50
-Trial = 3
+Trial = 50
 TotalTrials = Trial * len(OnFrame)
 
 #feedback setup
@@ -111,13 +121,11 @@ def showInstructions():
     
     instruction = visual.TextStim(
         win,
-        text="There is two unfair coins, one is biased towards head and one is biased towards tail.\n"
-             "You will see a sequence of coin flips and your task is to figure out which coin is being flipped.\n\n"
-             "When you know your answer:\n"
-             "Press H if you think the coin is biased towards HEADS\n"
-             "Press T if you think the coin is biased towards TAILS\n"
+        text="There are two unfair coins, one biased towards head and one biased towards tail.\n"
+             "You will see a sequence of coin flips and your task is to figure out which coin is being flipped.\n"
+             "When you know your answer, press the button on the key pad accordingly.\n"
              "Respond as quickly and accurately as possible.\n\n"
-             "Press SPACE to begin.",
+             "Press → to begin.",
         height=0.5,
         color=(1, 1, 1),
         wrapWidth=15,
@@ -196,10 +204,14 @@ def generateEvent(trialCount, onFrames):
     return trialData
 
 #get stimulus at terminate frame
-def getStimulus(events, frame):
+def getStimulus(events, responseTime):
     for idx, e in enumerate(events):
-        if e["onsetFrame"] <= frame <= e["offsetFrame"]:
+        onset = e["onsetFrame"] / refreshRate * 1000
+        offset = e["offsetFrame"] / refreshRate * 1000
+        if onset <= responseTime <= offset:
             return idx + 1
+        if responseTime < onset:
+            return idx
     return -1
 
 #run single trial and return trial data
@@ -223,19 +235,19 @@ def trial(trialCount, onFrames):
     Dev.flush_serial_buffer()
     Dev.reset_timer()
     while frame < trialFrames:
-        key = getPadKeys([EscapeKey, Resp1Key, Resp0Key])
+        key, responseTime = getPadKeysTime([EscapeKey, Resp1Key, Resp0Key])
         if key == EscapeKey:
             win.close()
             core.quit()
         if key == Resp1Key:
             response = 1
             answered = True
-            stimulusResponded = getStimulus(events, frame)
+            stimulusResponded = getStimulus(events, responseTime)
             break
         if key == Resp0Key:
             response = 0
             answered = True
-            stimulusResponded = getStimulus(events, frame)
+            stimulusResponded = getStimulus(events, responseTime)
             break    
         now = frame
         drawCircle()
@@ -264,6 +276,8 @@ def trial(trialCount, onFrames):
             Feedback.color = (1, 0, 0)
             WrongSound.play()
     else:
+        Feedback.text = "X"
+        Feedback.color = (1, 0, 0)
         WrongSound.play()
     
     #inter-trial break
@@ -278,7 +292,7 @@ def trial(trialCount, onFrames):
 def trialBreak():
     BreakTimeText = visual.TextStim(win, text="Break Time", height=1, color=(1, 1, 1), wrapWidth=20)
     CountdownText = visual.TextStim(win, text="", height=1.5, color=(1, 1, 1), wrapWidth=20)
-    ContinueText = visual.TextStim(win, text="Press SPACE to continue", height=1, color=(1, 1, 1), wrapWidth=20)
+    ContinueText = visual.TextStim(win, text="Continue →", height=1, color=(1, 1, 1), wrapWidth=20)
     
     #breaktime 120 frames (1secs)
     for frame in range(120):
@@ -286,7 +300,7 @@ def trialBreak():
         win.flip()
     
     #60secs countdown 7200 frames
-    countdownFrames = 1
+    countdownFrames = 7200
     for frame in range(countdownFrames):
         remainingTime = (countdownFrames - frame) / refreshRate
         countdownDisplay = f"{remainingTime:.0f}"
