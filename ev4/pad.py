@@ -86,7 +86,7 @@ Tail = visual.ImageStim(win, image="Stimulus/tail.jpg", size=(Coin, Coin))
 Proability = 0.65
 
 #trial and stimulus setup 
-OnFrame = [15, 15, 15, 15, 15] #frames [125ms]
+OnFrame = [15, 15, 15, 15] #frames [125ms]
 OffFrame = 3 #frames [25ms]
 InterBreakFrames = 120 #frames [1000ms]
 ShowingPerTrial = 50
