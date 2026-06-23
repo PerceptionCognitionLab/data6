@@ -49,7 +49,7 @@ el.setRefreshRate(refreshRate)
 [pid,sid,fname]=el.startExp(expName,dbConf,pool=1,lockBox=True,refreshRate=refreshRate)
 csv_path = f"E:/data6/ev4/Data/ev4p{pid}s{sid}.csv"
 XCols = [f"x{i+1}" for i in range(50)]
-data = pd.DataFrame(columns=["pid", "sid", "trl", "cond", "isHead", *XCols, "rt", "resp"])
+data = pd.DataFrame(columns=["pid", "sid", "trl",  "isHead", *XCols, "rt", "resp"])
 data.to_csv(csv_path, index=False)
 
 
@@ -86,12 +86,12 @@ Tail = visual.ImageStim(win, image="Stimulus/tail.jpg", size=(Coin, Coin))
 Proability = 0.65
 
 #trial and stimulus setup 
-OnFrame = [15, 15, 15, 15] #frames [125ms]
+OnFrame = [15, 15, 15, 15, 15] #frames [125ms]
 OffFrame = 3 #frames [25ms]
 InterBreakFrames = 120 #frames [1000ms]
 ShowingPerTrial = 50
-Trial = 50
-TotalTrials = Trial * len(OnFrame)
+Trial = [10, 50, 50, 50, 50]
+TotalTrials = sum(Trial)
 
 #feedback setup
 CorrectSound = sound.Sound(value=880, secs=0.15)
@@ -124,7 +124,8 @@ def showInstructions():
         text="There are two unfair coins, one biased towards head and one biased towards tail.\n"
              "You will see a sequence of coin flips and your task is to figure out which coin is being flipped.\n"
              "When you know your answer, press the button on the key pad accordingly.\n"
-             "Respond as quickly and accurately as possible.\n\n"
+             "Respond as quickly and accurately as possible.\n"
+             "You may respond before the trial ends.\n\n"
              "Press → to begin.",
         height=0.5,
         color=(1, 1, 1),
@@ -376,9 +377,10 @@ Dev.flush_serial_buffer()
 
 #instruction
 showInstructions()
+win.mouseVisible = False
 
 #trials
-condition = []
+cumulativeTrials = np.cumsum(Trial)
 for t in range(TotalTrials):
     Dev.flush_serial_buffer()
     
@@ -389,24 +391,20 @@ for t in range(TotalTrials):
     core.wait(1)
 
     #determine OnFrame group
-    onFrameGroupIndex = t // Trial
+    onFrameGroupIndex = np.searchsorted(cumulativeTrials, t, side="right")
     currentOnFrames = OnFrame[onFrameGroupIndex]
     
-    #determine condition group
-    if currentOnFrames not in condition:
-        condition.append(currentOnFrames)
-    conditionCount = condition.index(currentOnFrames) + 1
     
     trialData = trial(t+1, currentOnFrames)
     stimulusStr = [e["label"] for e in trialData["events"]]
     
     with open(csv_path, "a", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([pid, sid, trialData['trial'], conditionCount, trialData['isHead'], *stimulusStr, trialData['terminateStimulus'], trialData['response']])
+        writer.writerow([pid, sid, trialData['trial'], trialData['isHead'], *stimulusStr, trialData['terminateStimulus'], trialData['response']])
         f.close()
     
     #break after each trial block
-    if (t + 1) % Trial == 0 and t + 1 < TotalTrials:
+    if (t + 1) in cumulativeTrials[:-1]:
         trialBreak()
 
 concern = getConcern()
