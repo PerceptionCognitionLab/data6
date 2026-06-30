@@ -85,11 +85,11 @@ Head = visual.ImageStim(win, image="Stimulus/head.jpg", size=(Coin, Coin))
 Tail = visual.ImageStim(win, image="Stimulus/tail.jpg", size=(Coin, Coin))
 
 #trial and stimulus setup 
-OnFrame = [15, 15, 15, 15, 15] #frames [125ms]
+OnFrame = [15, 15] #frames [125ms]
 OffFrame = 3 #frames [25ms]
 InterBreakFrames = 120 #frames [1000ms]
 ShowingPerTrial = 50
-Block = [10, 60, 60, 60, 60]
+Block = [20, 20]
 TotalTrials = sum(Block)
 
 #feedback setup
@@ -201,23 +201,24 @@ def generateProbabilities():
     probs = []
     for b, blockSize in enumerate(Block):
         initial = (
-            [0.65] * (blockSize // 2) +
-            [0.35] * (blockSize // 2)
+            [0.65] * 5 +
+            [0.35] * 5
         )
         random.shuffle(initial)
         probs.extend(initial)
-        if b > 0:
-            remainder = blockSize - len(initial)
+        if blockSize > 10:
             extra = (
-                [0.50] * int(blockSize * 0.2) +
+                #[0.50] * int(blockSize * 0.2) +
                 [0.00] * 1 +
                 [1.00] * 1
             )
-            remainingAfterSpecial = remainder - len(extra)
+            remainder = blockSize - len(initial) - len(extra)
             extra.extend(
-                [0.65] * (remainingAfterSpecial // 2) +
-                [0.35] * (remainingAfterSpecial // 2)
+                [0.65] * (remainder // 2) +
+                [0.35] * (remainder // 2)
             )
+            if remainder % 2:
+                extra.append(random.choice([0.65, 0.35]))
             random.shuffle(extra)
             probs.extend(extra)
     return probs
@@ -282,7 +283,7 @@ def getStimulus(events, responseTime):
             return idx + 1
         if responseTime < onset:
             return idx
-    return -1
+    return len(events)
 
 def generateFeedback(trialData, response):
     probHead = trialData["probHead"]
@@ -306,15 +307,12 @@ def generateFeedback(trialData, response):
                 evidence += 1
             else:
                 evidence -= 1
-                
         if evidence > 0:
             correctAnswer = 1
         elif evidence < 0:
             correctAnswer = 0
         else:
             correctAnswer = None
-
-
         if correctAnswer is not None and response == correctAnswer:
             correct = True
 
@@ -392,7 +390,7 @@ def practice(nTrials=20):
             writer.writerow([
                 pid,
                 sid,
-                -1,          # probHead = -1 for pratice
+                -0.5,
                 p + 1,
                 correctResponse,
                 *stimulusStr,
@@ -404,7 +402,6 @@ def practice(nTrials=20):
 def trial(trialCount, onFrames, pHead):
     trialData = generateShowings(trialCount, onFrames, pHead)
     events = trialData["events"]
-#   isHead = trialData["isHead"]
     
     if events:
         trialFrames = events[-1]["offsetFrame"]
@@ -585,6 +582,9 @@ for t in range(TotalTrials):
     #break after each trial block
     if (t + 1) in cumulativeTrials[:-1]:
         trialBreak()
+#pratice
+practiceInstruction()
+practice()
 
 concern = getConcern()
 [resX,resY]=win.size
