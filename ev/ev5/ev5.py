@@ -167,11 +167,11 @@ def trialInstruction():
     
     instruction = visual.TextStim(
         win,
-        text="There are two unfair coins, one biased towards head and one biased towards tail.\n"
-             "You will see a sequence of coin flips and your task is to figure out which coin is being flipped.\n"
+        text="One biased coin is being flipped many times.\n"
+             "Your job is to determine which side the coin is biased towards based on the coin flips you see.\n"
              "When you know your answer, press the button on the key pad accordingly.\n"
+             "Once you answer, a new biased coin will be flipped and the process repeats.\n\n"
              "Respond as quickly and accurately as possible.\n"
-             "You may respond before the sequence ends.\n\n"
              "Press → to begin.",
         height=0.5,
         color=(1, 1, 1),
