@@ -28,11 +28,14 @@ trialClock=core.Clock()
 
 win=visual.Window(units= "pix", size=(1000, 1000), color=[-1,-1,-1], fullscr = False)
 
+Adjust = 0
+
 def run_trial(x,y):
     text = visual.TextStim(win,"Welcome to the experiment! Press key to start trial", height = 40, pos = (0,0))
     text.draw()
     win.flip()
     event.waitKeys()
+    global Adjust
     
     
     list_letters = ["a","s","d","f","g", "h", "j", "k", "l"]
@@ -86,23 +89,18 @@ def run_trial(x,y):
     letter3 = visual.TextStim(win, rand_letters[2],height= 40, color=[-1,-1,-1], pos = (212,212))
     letter4 = visual.TextStim(win, rand_letters[3],height= 40, color=[-1,-1,-1], pos = (300,0))
     
-    #might not need this after RunFrames
-    #letter1.draw()
-    #letter2.draw()
-    #letter3.draw()
-    #letter4.draw()
-    
     
     
     correct_answer = rand_letters[mult_num-1]
     
     
     frames = []
-    frameDurations= [x,y]
+    frameDurations= [x,25,y,25]
     
     frames.append(visual.BufferImageStim(win, stim=[ rectangle1,rectangle2, rectangle3, rectangle4, center_rectangle, number]))
+    frames.append(visual.BufferImageStim(win, stim=[ rectangle1,rectangle2, rectangle3, rectangle4, center_rectangle]))
     frames.append(visual.BufferImageStim(win,stim=[ rectangle1,rectangle2, rectangle3, rectangle4, center_rectangle, letter1, letter2, letter3, letter4]))
-    
+    frames.append(visual.BufferImageStim(win,stim=[ rectangle1,rectangle2, rectangle3, rectangle4, center_rectangle]))    
     
     stamps=el.runFrames(win,frames,frameDurations,trialClock)
     
@@ -124,12 +122,12 @@ def run_trial(x,y):
     if correct_answer in keys:
         correct_text =  visual.TextStim(win, "Correct!",height= 40, color=[0,1,0], pos = (0,0))
         correct_text.draw()
-        Adjust = 1
+        Adjust = "correct"
        
     else:
         wrong_text = visual.TextStim(win, "Incorrect",height= 40, color=[1,0,0], pos = (0,0))
         wrong_text.draw()
-        Adjust = 0
+        Adjust = "incorrect"
       
     
     win.flip()
@@ -138,25 +136,24 @@ def run_trial(x,y):
     print("Difference Between Frames:\n",el.actualFrameDurations(frameDurations,stamps))
 
 
-Adjust = 0
 #time the numbers stay on screen
-num_time = 100
+num_time = 50
 #time the letters stay on screen
-let_time= 100
+let_time= 50
 
-for i in range(2):
-    run_trial(num_time, let_time)
-
-#for i in range(5):
+#for i in range(10):
 #    run_trial(num_time, let_time)
-#    
-#    if Adjust ==1:
-#        num_time = num_time*0.75
-#        let_time = let_time*0.75
-#
-#    elif Adjust == 0:
-#        num_time = num_time*1.25
-#        let_time = let_time*1.25
+
+for i in range(10):
+    run_trial(num_time, let_time)
+    
+    if Adjust == "correct":
+        num_time = int(num_time*0.5)
+        let_time = int( let_time*0.5)
+
+    elif Adjust == "incorrect":
+        num_time = num_time*5
+        let_time = let_time*5
         
 
 win.close()

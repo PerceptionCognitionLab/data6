@@ -249,3 +249,4 @@ session,trial,staircase,letter,response,correct,soa1,soa2
 5,24,3,G,G,True,6,7
 5,25,2,L,G,False,6,7
 5,25,3,F,F,True,7,7
+6,1,2,A,S,False,7,7
