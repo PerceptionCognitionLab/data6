@@ -1,0 +1,3 @@
+block,trial,word,color,congruent,rt_ms,recognized_text,recognized_color_word,correct,timed_out,no_response,audio_file
+1,1,red,blue,False,307.6,red,red,False,False,False,data\voice\audio\222_20260915_155559\block1_trial001.wav
+1,2,green,blue,False,453.0,green,green,False,False,False,data\voice\audio\222_20260915_155559\block1_trial002.wav
