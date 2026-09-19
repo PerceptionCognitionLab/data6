@@ -1,165 +1,143 @@
-import os
-import csv
-import random
-from psychopy import visual, core, event, gui, sound
+from psychopy import core, event
 
-def run_manual(pid, nBlocks, nTrials):
-    COLOR_WORDS = ["red", "blue", "green", "yellow"]
-    COLOR_RGB = {"red": "red", "blue": "blue", "green": "green", "yellow": "yellow"}
+from stroop_common import (
+    COLOR_RGB, CSV_FIELDNAMES,
+    check_quit, show_block_intro, show_practice_prompt,
+    show_practice_fail, show_practice_complete,
+    build_trial_list, build_practice_list, make_tones, make_stims,
+    write_csv_row, MAX_PRACTICE_ATTEMPTS,
+)
 
-    # d/f/j/k -> color, left/right hand symmetric mapping
-    KEY_TO_COLOR = {"d": "red", "f": "blue", "j": "green", "k": "yellow"}
-    N_BLOCKS = nBlocks
-    TRIALS_PER_CONDITION = nTrials   
-    RESPONSE_TIMEOUT = 2.0      # seconds, same as SILENCE_TIMEOUT in the voice version
-    BG_COLOR = [-0.85, -0.85, -0.85] 
-    TEXT_COLOR = "white"
-    ACCENT_COLOR = "white"         
-    DATA_DIR = os.path.join("data", "manual")
-    os.makedirs(DATA_DIR, exist_ok=True)
+# d/f/j/k -> color, left/right hand symmetric mapping
+KEY_TO_COLOR = {"d": "red", "f": "blue", "j": "green", "k": "yellow"}
+RESPONSE_TIMEOUT = 2.0  # seconds, same as SILENCE_TIMEOUT in the voice version
 
-    def build_blocks():
-        blocks = []
-        for _ in range(N_BLOCKS):
-            trials = []
-            for _ in range(TRIALS_PER_CONDITION):
-                word = random.choice(COLOR_WORDS)
-                trials.append({"word": word, "color": word})  # congruent
-            for _ in range(TRIALS_PER_CONDITION):
-                word = random.choice(COLOR_WORDS)
-                color = random.choice([c for c in COLOR_WORDS if c != word])
-                trials.append({"word": word, "color": color})  # incongruent
-            random.shuffle(trials)
-            blocks.append(trials)
-        return blocks
+INSTRUCTIONS_TEXT = (
+    "In each trial, press the key matching the INK COLOR of the word "
+    "as fast as you can (ignore what the word says).\n\n"
+    "D = red      F = blue      J = green      K = yellow\n\n"
+    "You will hear a tone after each response."
+)
+
+PRACTICE_REMINDER_TEXT = (
+    "Remember: press the key matching the INK COLOR — "
+    "D = red   F = blue   J = green   K = yellow"
+)
 
 
-    def make_window():
-        return visual.Window(fullscr=True, color=BG_COLOR, units="height", allowGUI=False)
+def wait_for_keypress(stim_onset_time, timeout=RESPONSE_TIMEOUT):
+    deadline = stim_onset_time + timeout
+    while True:
+        now = core.getTime()
+        if now > deadline:
+            return {"key": None, "rt_ms": None, "timed_out": True}
+
+        keys = event.getKeys(keyList=list(KEY_TO_COLOR.keys()) + ["escape"])
+        if keys:
+            key = keys[0]
+            if key == "escape":
+                core.quit()
+            rt_ms = (core.getTime() - stim_onset_time) * 1000.0
+            return {"key": key, "rt_ms": rt_ms, "timed_out": False}
 
 
-    def check_quit():
-        if "escape" in event.getKeys(keyList=["escape"]):
-            core.quit()
+class ManualModality:
+    label = "Keyboard"
+    key = "manual"
 
-    def show_message(win, text, wait_for_space=True, height=0.045):
-        stim = visual.TextStim(win, text=text, color=TEXT_COLOR, height=height,
-                                wrapWidth=1.3, font="Arial")
-        stim.draw()
-        win.flip()
-        if wait_for_space:
-            while True:
-                keys = event.waitKeys(keyList=["space", "escape"])
-                if "escape" in keys:
-                    core.quit()
-                if "space" in keys:
-                    break
-                
-    def wait_for_keypress(stim_onset_time, timeout=RESPONSE_TIMEOUT):
-        deadline = stim_onset_time + timeout
-        while True:
-            now = core.getTime()
-            if now > deadline:
-                return {"key": None, "rt_ms": None, "timed_out": True}
+    def __init__(self, win, pid):
+        self.win = win
+        self.pid = pid
+        self.correct_tone, self.wrong_tone, self.no_response_tone = make_tones()
+        self.stim_text, self.fixation = make_stims(win)
 
-            keys = event.getKeys(keyList=list(KEY_TO_COLOR.keys()) + ["escape"])
-            if keys:
-                key = keys[0]
-                if key == "escape":
-                    core.quit()
-                rt_ms = (core.getTime() - stim_onset_time) * 1000.0
-                return {"key": key, "rt_ms": rt_ms, "timed_out": False}
+    # no mic to manage, but keep the same interface as VoiceModality so
+    # main.py can drive both uniformly
+    def enter_block(self):
+        pass
 
-    def run_experiment():
-        data_path = os.path.join(DATA_DIR, f"{pid}.csv")
+    def exit_block(self):
+        pass
 
-        correct_tone = sound.Sound(value=880, secs=0.15)
-        wrong_tone = sound.Sound(value=220, secs=0.15)
-        no_response_tone = sound.Sound(value=140, secs=0.15)
+    def show_block_intro(self, block_idx, total_blocks):
+        show_block_intro(self.win, INSTRUCTIONS_TEXT, block_idx, total_blocks)
 
-        win = make_window()
-        stim_text = visual.TextStim(win, text="", height=0.2, font="Arial", bold=True)
-        fixation = visual.TextStim(win, text="+", color=ACCENT_COLOR, height=0.08)
+    def _run_trial(self, trial, block_num, trial_num, record):
+        word, color = trial["word"], trial["color"]
+        congruent = (word == color)
 
-        show_message(
-            win,
-            "In each trial, press the key matching the INK COLOR of the word "
-            "as fast as you can (ignore what the word says).\n\n"
-            "D = red      F = blue      J = green      K = yellow\n\n"
-            "You will hear a tone after each response.\n\n"
-            "Press SPACE to begin."
-        )
+        self.fixation.draw()
+        self.win.flip()
+        core.wait(0.5)
 
-        blocks = build_blocks()
+        event.clearEvents()  # drop stray keys pressed before stim onset
+        self.stim_text.setText(word.upper())
+        self.stim_text.setColor(COLOR_RGB[color])
+        self.stim_text.draw()
+        self.win.flip()
+        stim_onset_time = core.getTime()
 
-        fieldnames = [
-            "block", "trial", "word", "color", "congruent",
-            "rt_ms", "response_key", "recognized_color", "correct",
-            "timed_out", "no_response",
-        ]
-        with open(data_path, "w", newline="", encoding="utf-8") as f:
-            csv.DictWriter(f, fieldnames=fieldnames).writeheader()
+        result = wait_for_keypress(stim_onset_time)
 
-        try:
-            for b, block_trials in enumerate(blocks, start=1):
-                show_message(
-                    win,
-                    f"Block {b} of {N_BLOCKS}\n\nPress SPACE to start.",
-                )
+        response_color = KEY_TO_COLOR.get(result["key"], "")
+        is_correct = (response_color == color)
+        no_response = result["timed_out"]
 
-                for i, trial in enumerate(block_trials, start=1):
-                    check_quit()
-                    word, color = trial["word"], trial["color"]
-                    congruent = (word == color)
+        self.win.flip()  # clear stimulus while tone plays
+        if no_response:
+            self.no_response_tone.play()
+        elif is_correct:
+            self.correct_tone.play()
+        else:
+            self.wrong_tone.play()
+        core.wait(0.35)
 
-                    fixation.draw()
-                    win.flip()
-                    core.wait(0.5)
+        check_quit()
 
-                    event.clearEvents()  # drop stray keys pressed before stim onset
-                    stim_text.setText(word.upper())
-                    stim_text.setColor(COLOR_RGB[color])
-                    stim_text.draw()
-                    win.flip()
-                    stim_onset_time = core.getTime()
+        if not record:
+            return is_correct
 
-                    result = wait_for_keypress(stim_onset_time)
+        row = {fn: "" for fn in CSV_FIELDNAMES}
+        row.update({
+            "modality": "manual",
+            "block": block_num,
+            "trial": trial_num,
+            "word": word,
+            "color": color,
+            "congruent": congruent,
+            "rt_ms": round(result["rt_ms"], 1) if result["rt_ms"] else "",
+            "correct": is_correct,
+            "timed_out": result["timed_out"],
+            "no_response": no_response,
+            "response_key": result["key"] or "",
+            "recognized_color": response_color,
+        })
+        return row, is_correct
 
-                    response_color = KEY_TO_COLOR.get(result["key"], "")
-                    is_correct = (response_color == color)
-                    no_response = result["timed_out"]
+    def run_practice(self, max_attempts=MAX_PRACTICE_ATTEMPTS):
+        """Runs rounds of up to 5 practice trials (not saved to CSV). A
+        round stops the moment a trial is wrong. Passes only on a clean
+        round of all 5 correct; gives up after max_attempts rounds."""
+        show_practice_prompt(self.win, self.label)
+        for attempt in range(max_attempts):
+            trials = build_practice_list()
+            passed = True
+            for i, trial in enumerate(trials, start=1):
+                check_quit()
+                is_correct = self._run_trial(trial, 0, i, record=False)
+                if not is_correct:
+                    passed = False
+                    break  # stop this round immediately on the first error
+            if passed:
+                show_practice_complete(self.win, self.label)
+                return True
+            show_practice_fail(self.win, PRACTICE_REMINDER_TEXT)  # also doubles as the
+            # "press space to start" prompt for the next round
+        return False
 
-                    win.flip()  # clear stimulus while tone plays
-                    if no_response:
-                        no_response_tone.play()
-                    elif is_correct:
-                        correct_tone.play()
-                    else:
-                        wrong_tone.play()
-                    core.wait(0.35)
-
-                    with open(data_path, "a", newline="", encoding="utf-8") as f:
-                        csv.DictWriter(f, fieldnames=fieldnames).writerow({
-                            "block": b,
-                            "trial": i,
-                            "word": word,
-                            "color": color,
-                            "congruent": congruent,
-                            "rt_ms": round(result["rt_ms"], 1) if result["rt_ms"] else "",
-                            "response_key": result["key"] or "",
-                            "recognized_color": response_color,
-                            "correct": is_correct,
-                            "timed_out": result["timed_out"],
-                            "no_response": no_response,
-                        })
-
-                    check_quit()
-
-            show_message(win, "Experiment complete. Thank you!", wait_for_space=False)
-            core.wait(2.0)
-        finally:
-            win.close()
-    run_experiment()
-
-if __name__ == "__main__":
-    run_manual("test", 2, 1)
+    def run_block(self, block_num_total, n_trials, data_path):
+        trials = build_trial_list(n_congruent=n_trials, n_incongruent=n_trials)
+        for i, trial in enumerate(trials, start=1):
+            check_quit()
+            row, _ = self._run_trial(trial, block_num_total, i, record=True)
+            write_csv_row(data_path, row)
