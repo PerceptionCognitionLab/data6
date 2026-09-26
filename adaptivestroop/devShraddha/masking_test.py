@@ -49,8 +49,9 @@ frameDurations= []
 #text = visual.TextStim(win, symbols)
 for i in symbols:
     frameDurations.append(10)
-    frames.append(visual.TextStim(win, i, pos = (-300,0)))
-    #frames.append(visual.BufferImageStim(win, stim=[visual.TextStim(win, rand_letters[0], pos = (-300,0))]))
+    #frames.append(visual.TextStim(win, i, pos = (-300,0)))
+    frames.append(visual.BufferImageStim(win, stim=[visual.TextStim(win, i, pos = (-300,0)), visual.TextStim(win, i, pos = (-212,212))]))
+    
 
 stamps=el.runFrames(win,frames,frameDurations,trialClock)
 

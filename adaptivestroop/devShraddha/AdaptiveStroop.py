@@ -40,27 +40,14 @@ def run_trial(x,y):
     
     list_letters = ["a","s","d","f","g", "h", "j", "k", "l"]
     rand_letters = random.sample(list_letters,4)
-    noise_list = ["!","@ ", "#", "$", "%", "^"]
-    rand_noise = random.sample(noise_list,4)
-    
+ 
     #Draw the rectangles I actually want
     center_rectangle = visual.Rect(win, width = 100, height=100, fillColor = [1,1,1], pos = (0,0))
-    #center_rectangle.draw()
-    
     rectangle4 = visual.Rect(win, width=100, height=100, fillColor=[1,1,1], pos =(300,0))
-    #rectangle4.draw()
-    
     rectangle1 = visual.Rect(win, width=100, height=100, fillColor=[1,1,1], pos= (-300,0))
-    #rectangle1.draw()
-           
     rectangle2 = visual.Rect(win, width=100, height=100, fillColor= [1,1,1], pos=(-212, 212))
-    #rectangle2.draw()
-    
     rectangle3 = visual.Rect(win, width=100, height=100, fillColor= [1,1,1], pos=(212, 212))
-    #rectangle3.draw()
-    
-    
-    rectangles = [rectangle1, rectangle2, rectangle3, rectangle4]
+    rectangles = [rectangle1, rectangle2, rectangle3, rectangle4, center_rectangle]
     
     #selecting if it will be congruent or incongruent
     cond = random.randint(1,2)
@@ -89,22 +76,24 @@ def run_trial(x,y):
     letter2 = visual.TextStim(win, rand_letters[1],height= 40, color=[-1,-1,-1], pos = (-212,212))
     letter3 = visual.TextStim(win, rand_letters[2],height= 40, color=[-1,-1,-1], pos = (212,212))
     letter4 = visual.TextStim(win, rand_letters[3],height= 40, color=[-1,-1,-1], pos = (300,0))
-    
-    noise1 =  visual.TextStim(win,"@" ,height= 40, color=[-1,-1,-1], pos = (300,0))
-    noise2 = visual.TextStim(win, rand_noise[1],height= 40, color=[-1,-1,-1], pos = (-212,212))
-    noise3 = visual.TextStim(win, rand_noise[2],height= 40, color=[-1,-1,-1], pos = (212,212))
-    noise4 = visual.TextStim(win, rand_noise[3],height= 40, color=[-1,-1,-1], pos = (300,0))
+    letters = [letter1, letter2, letter3, letter4]
+
     
     correct_answer = rand_letters[mult_num-1]
     
     
     frames = []
-    frameDurations= [x,25,y,25]
+    frameDurations= [x,25,y, 10, 10, 10, 10, 10]
     
-    frames.append(visual.BufferImageStim(win, stim=[ rectangle1,rectangle2, rectangle3, rectangle4, center_rectangle, number]))
-    frames.append(visual.BufferImageStim(win, stim=[ rectangle1,rectangle2, rectangle3, rectangle4, center_rectangle]))
-    frames.append(visual.BufferImageStim(win,stim=[ rectangle1,rectangle2, rectangle3, rectangle4, center_rectangle, letter1, letter2, letter3, letter4]))
-    frames.append(visual.BufferImageStim(win,stim=[ rectangle1,rectangle2, rectangle3, rectangle4, center_rectangle, noise1, noise2,noise3, noise4]))    
+    frames.append(visual.BufferImageStim(win, stim= rectangles + [number]))
+    frames.append(visual.BufferImageStim(win, stim= rectangles))
+    frames.append(visual.BufferImageStim(win,stim= rectangles + letters))
+    
+    for i in ["!", "@", "#", "$", "%"]:
+            frames.append(visual.BufferImageStim(win, stim= rectangles + [visual.TextStim(win, i,color=[-1,-1,-1], height= 40, pos = (-300,0)), 
+                                                                          visual.TextStim(win, i, color=[-1,-1,-1], height= 40, pos = (-212,212)),
+                                                                          visual.TextStim(win, i, color=[-1,-1,-1], height= 40,  pos = (212,212)),
+                                                                          visual.TextStim(win, i, color=[-1,-1,-1], height= 40, pos = (300,0))]))
     
     
     stamps=el.runFrames(win,frames,frameDurations,trialClock)
@@ -149,7 +138,7 @@ let_time= 50
 #for i in range(10):
 #    run_trial(num_time, let_time)
 
-for i in range(3):
+for i in range(5):
     run_trial(num_time, let_time)
     if 'escape' in event.getKeys():
         print("Experiment aborted by user.")
