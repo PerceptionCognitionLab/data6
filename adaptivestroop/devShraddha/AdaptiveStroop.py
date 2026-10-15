@@ -31,7 +31,7 @@ win=visual.Window(units= "pix", size=(1000, 1000), color=[-1,-1,-1], fullscr = F
 Adjust = 0
 
 def run_trial(x,y):
-    text = visual.TextStim(win,"Welcome to the experiment! Press key to start trial", height = 40, pos = (0,0))
+    text = visual.TextStim(win,"Welcome to the experiment! Press key to start trial", height = 40, pos = (0,-100))
     text.draw()
     win.flip()
     event.waitKeys()
@@ -42,11 +42,11 @@ def run_trial(x,y):
     rand_letters = random.sample(list_letters,4)
  
     #Draw the rectangles I actually want
-    center_rectangle = visual.Rect(win, width = 100, height=100, fillColor = [1,1,1], pos = (0,0))
-    rectangle4 = visual.Rect(win, width=100, height=100, fillColor=[1,1,1], pos =(300,0))
-    rectangle1 = visual.Rect(win, width=100, height=100, fillColor=[1,1,1], pos= (-300,0))
-    rectangle2 = visual.Rect(win, width=100, height=100, fillColor= [1,1,1], pos=(-212, 212))
-    rectangle3 = visual.Rect(win, width=100, height=100, fillColor= [1,1,1], pos=(212, 212))
+    center_rectangle = visual.Rect(win, width = 100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos = (0,-100))
+    rectangle1 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos= (-283,183))
+    rectangle2 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos=(-104, 286))
+    rectangle3 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos=(283, 183))
+    rectangle4 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos =(104,286))
     rectangles = [rectangle1, rectangle2, rectangle3, rectangle4, center_rectangle]
     
     #selecting if it will be congruent or incongruent
@@ -56,7 +56,7 @@ def run_trial(x,y):
     if cond == 1:
         rand_num = random.randint(1,4)
         mult_num = rand_num
-        number = visual.TextStim(win, str(rand_num) * (rand_num), height= 40, color=[-1,-1,-1], pos = (0,0))
+        number = visual.TextStim(win, str(rand_num) * (rand_num), height= 40, color=[1,1,1], pos = (0,-100))
         number.draw()
         
     #incongruent
@@ -66,16 +66,16 @@ def run_trial(x,y):
         mult_num_option = [1,2,3,4]
         mult_num_option.remove(rand_num)
         mult_num = random.choice(mult_num_option)
-        number = visual.TextStim(win, str(rand_num) * mult_num, height= 40, color=[-1,-1,-1], pos = (0,0))
+        number = visual.TextStim(win, str(rand_num) * mult_num, height= 40, color=[1,1,1], pos = (0,-100))
         number.draw()
     
     
     
     
-    letter1 = visual.TextStim(win, rand_letters[0],height= 40, color=[-1,-1,-1], pos = (-300,0))
-    letter2 = visual.TextStim(win, rand_letters[1],height= 40, color=[-1,-1,-1], pos = (-212,212))
-    letter3 = visual.TextStim(win, rand_letters[2],height= 40, color=[-1,-1,-1], pos = (212,212))
-    letter4 = visual.TextStim(win, rand_letters[3],height= 40, color=[-1,-1,-1], pos = (300,0))
+    letter1 = visual.TextStim(win, rand_letters[0],height= 40, color='white', pos = (-283,183))
+    letter2 = visual.TextStim(win, rand_letters[1],height= 40, color='white', pos = (-104,286))
+    letter3 = visual.TextStim(win, rand_letters[2],height= 40, color='white', pos = (104,286))
+    letter4 = visual.TextStim(win, rand_letters[3],height= 40, color='white', pos = (283,183))
     letters = [letter1, letter2, letter3, letter4]
 
     
@@ -83,22 +83,25 @@ def run_trial(x,y):
     
     
     frames = []
-    frameDurations= [x,25,y, 10, 10, 10, 10, 10]
+    #first frame durations is for testing
+    frameDurations=  [50,x,50,y, 20, 20, 20, 20, 20]
+    #frameDurations= [x,25,y, 10, 10, 10, 10, 10]
     
+    frames.append(visual.BufferImageStim(win,stim = rectangles))
     frames.append(visual.BufferImageStim(win, stim= rectangles + [number]))
     frames.append(visual.BufferImageStim(win, stim= rectangles))
     frames.append(visual.BufferImageStim(win,stim= rectangles + letters))
     
     for i in ["!", "@", "#", "$", "%"]:
-            frames.append(visual.BufferImageStim(win, stim= rectangles + [visual.TextStim(win, i,color=[-1,-1,-1], height= 40, pos = (-300,0)), 
-                                                                          visual.TextStim(win, i, color=[-1,-1,-1], height= 40, pos = (-212,212)),
-                                                                          visual.TextStim(win, i, color=[-1,-1,-1], height= 40,  pos = (212,212)),
-                                                                          visual.TextStim(win, i, color=[-1,-1,-1], height= 40, pos = (300,0))]))
+            frames.append(visual.BufferImageStim(win, stim= rectangles + [visual.TextStim(win, i,color=[-1,-1,-1], height= 40, pos = (-283,183)), 
+                                                                          visual.TextStim(win, i, color=[-1,-1,-1], height= 40, pos = (-104,286)),
+                                                                          visual.TextStim(win, i, color=[-1,-1,-1], height= 40,  pos = (283,183)),
+                                                                          visual.TextStim(win, i, color=[-1,-1,-1], height= 40, pos = (104,286))]))
     
     
     stamps=el.runFrames(win,frames,frameDurations,trialClock)
     
-    prompt = visual.TextStim(win, "enter response",height= 40, color=[-1,-1,-1], pos = (0,0))
+    prompt = visual.TextStim(win, "enter response",height= 40, color=[-1,-1,-1], pos = (0,-100))
     prompt.draw()
     win.flip()
     
@@ -107,19 +110,19 @@ def run_trial(x,y):
     print(keys)
     
     if cond == 1:
-        Condition_text = visual.TextStim(win,"congruent", height= 40, color=[1,1,1], pos = (0,-60))
+        Condition_text = visual.TextStim(win,"congruent", height= 40, color=[1,1,1], pos = (0,-160))
     elif cond ==2:
-        Condition_text = visual.TextStim(win,"incongruent", height= 40, color=[1,1,1], pos = (0,-60))
+        Condition_text = visual.TextStim(win,"incongruent", height= 40, color=[1,1,1], pos = (0,-160))
         
     Condition_text.draw()
         
     if correct_answer in keys:
-        correct_text =  visual.TextStim(win, "Correct!",height= 40, color=[0,1,0], pos = (0,0))
+        correct_text =  visual.TextStim(win, "Correct!",height= 40, color=[0,1,0], pos = (0,-100))
         correct_text.draw()
         Adjust = "correct"
        
     else:
-        wrong_text = visual.TextStim(win, "Incorrect",height= 40, color=[1,0,0], pos = (0,0))
+        wrong_text = visual.TextStim(win, "Incorrect",height= 40, color=[1,0,0], pos = (0,-100))
         wrong_text.draw()
         Adjust = "incorrect"
       
@@ -131,9 +134,9 @@ def run_trial(x,y):
 
 
 #time the numbers stay on screen
-num_time = 50
+num_time = 70
 #time the letters stay on screen
-let_time= 50
+let_time= 70
 
 #for i in range(10):
 #    run_trial(num_time, let_time)
