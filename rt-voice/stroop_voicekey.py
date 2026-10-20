@@ -1,8 +1,5 @@
-import os
 import json
 import queue
-import wave
-import numpy as np
 import sounddevice as sd
 from vosk import Model, KaldiRecognizer
 from psychopy import core
@@ -18,16 +15,11 @@ from stroop_common import (
 VOSK_MODEL_PATH = "model/vosk-model-small-en-us-0.15"
 SILENCE_TIMEOUT = 2.0
 PRE_TRIAL_DISCARD_MARGIN = 0.0
-AUDIO_DIR = os.path.join("data", "voice_audio")
 
 INSTRUCTIONS_TEXT = (
     "In each trial, say the INK COLOR of the word out loud as fast as you can "
     "(ignore what the word says).\n\n"
     "You will hear a tone after each response."
-)
-
-PRACTICE_REMINDER_TEXT = (
-    "Remember: say the INK COLOR of the word out loud, not the word itself."
 )
 
 
@@ -89,7 +81,6 @@ class PersistentVoiceKey:
         recognizer = self._make_recognizer()
         recognized_text = ""
         result_words = []
-        chunks = []
         timed_out = False
         got_final = False
         first_block_start_time = None
@@ -105,7 +96,6 @@ class PersistentVoiceKey:
                 continue
             if block_time < stim_onset_time - PRE_TRIAL_DISCARD_MARGIN:
                 continue
-            chunks.append(data)
             if first_block_start_time is None:
                 n_samples = len(data) // 2  # int16 = 2 bytes/sample
                 first_block_start_time = block_time - n_samples / self.sample_rate
@@ -129,24 +119,14 @@ class PersistentVoiceKey:
                 recognized_color_word = w.get("word", "").lower()
 
         rt_ms = (onset_time - stim_onset_time) * 1000.0 if onset_time is not None else None
-        audio_np = np.frombuffer(b"".join(chunks), dtype=np.int16)
 
         return {
             "rt_ms": rt_ms,
             "recognized_text": recognized_text,
             "recognized_color_word": recognized_color_word,
-            "audio": audio_np,
             "timed_out": timed_out,
             "no_response": recognized_color_word is None,
         }
-
-
-def save_wav(path, audio_np, sample_rate):
-    with wave.open(path, "wb") as wf:
-        wf.setnchannels(1)
-        wf.setsampwidth(2)
-        wf.setframerate(sample_rate)
-        wf.writeframes(audio_np.tobytes())
 
 
 class VoiceModality:
@@ -166,9 +146,6 @@ class VoiceModality:
         )
         self.correct_tone, self.wrong_tone, self.no_response_tone = make_tones()
         self.stim_text, self.fixation = make_stims(win)
-
-        self.subj_audio_dir = os.path.join(AUDIO_DIR, f"{pid}")
-        os.makedirs(self.subj_audio_dir, exist_ok=True)
 
     # --- mic lifecycle, called by main.py around each voice block ---
     def enter_block(self):
@@ -216,16 +193,6 @@ class VoiceModality:
         if not record:
             return is_correct
 
-        # audio_file is named by the total block number (across both
-        # modalities), matching how block_num is written to the CSV.
-        audio_path = os.path.join(
-            self.subj_audio_dir, f"block{block_num}_trial{trial_num:03d}.wav"
-        )
-        if result["audio"].size > 0:
-            save_wav(audio_path, result["audio"], sample_rate=self.voice_key.sample_rate)
-        else:
-            audio_path = ""
-
         row = {fn: "" for fn in CSV_FIELDNAMES}
         row.update({
             "modality": "voice",
@@ -234,13 +201,13 @@ class VoiceModality:
             "word": word,
             "color": color,
             "congruent": congruent,
+            "transition": trial.get("transition", ""),
             "rt_ms": round(result["rt_ms"], 1) if result["rt_ms"] else "",
             "correct": is_correct,
             "timed_out": result["timed_out"],
             "no_response": result["no_response"],
             "recognized_text": recognized_text,
             "recognized_color_word": recognized,
-            "audio_file": audio_path,
         })
         return row, is_correct
 
@@ -261,12 +228,12 @@ class VoiceModality:
             if passed:
                 show_practice_complete(self.win, self.label)
                 return True
-            show_practice_fail(self.win, PRACTICE_REMINDER_TEXT)  # also doubles as the
+            show_practice_fail(self.win, self.label)  # also doubles as the
             # "press space to start" prompt for the next round
         return False
 
     def run_block(self, block_num_total, n_trials, data_path):
-        trials = build_trial_list(n_congruent=n_trials, n_incongruent=n_trials)
+        trials = build_trial_list(n_trials)
         for i, trial in enumerate(trials, start=1):
             check_quit()
             row, _ = self._run_trial(trial, block_num_total, i, record=True)

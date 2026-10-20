@@ -2,8 +2,8 @@ import csv
 import random
 from psychopy import visual, core, event, sound
 
-COLOR_WORDS = ["red", "blue", "green", "yellow"]
-COLOR_RGB = {"red": "red", "blue": "blue", "green": "green", "yellow": "yellow"}
+COLOR_WORDS = ["red", "blue", "green"]   # 3 colors (yellow dropped)
+COLOR_RGB = {"red": "red", "blue": "blue", "green": "green"}
 
 TEXT_COLOR = "white"
 ACCENT_COLOR = "white"
@@ -12,8 +12,9 @@ ACCENT_COLOR = "white"
 # modality are left blank on that row.
 CSV_FIELDNAMES = [
     "modality", "block", "trial", "word", "color", "congruent",
+    "transition",  # ink color vs previous trial: repeat / alternate / first
     "rt_ms", "correct", "timed_out", "no_response",
-    "recognized_text", "recognized_color_word", "audio_file",  # voice-only
+    "recognized_text", "recognized_color_word",  # voice-only
     "response_key", "recognized_color",          # manual-only
 ]
 
@@ -21,30 +22,11 @@ PRACTICE_N = 5
 MAX_PRACTICE_ATTEMPTS = 4  # if practice isn't passed clean within this many
                             # rounds of 5, the experiment aborts.
 
-# Per-block trial counts. Combination-balanced (each congruent color, each
-# incongruent word/color pair appears an equal number of times) AND
-# sequence-balanced (an exact number of adjacent-same-color "repeat" trials).
-N_CONGRUENT_PER_BLOCK = 48
-N_INCONGRUENT_PER_BLOCK = 48
-N_REPEATS_TARGET_PER_BLOCK = 24
-REPEAT_BALANCE_MAX_ITERATIONS = 5000
-
 
 def show_welcome(win):
     text = (f"Welcome to the study.\n\n"
             f"Press SPACE to continue.")
     show_message(win, text)
-
-
-def show_loading(win, text="Loading, please wait..."):
-    """No wait-for-space: draws once and returns immediately, so the caller
-    can go do the slow work (e.g. loading the speech model) right after the
-    flip, and the next screen shown afterwards is what makes this feel like
-    an automatic transition."""
-    stim = visual.TextStim(win, text=text, color=TEXT_COLOR, height=0.05,
-                            wrapWidth=1.3, font="Arial")
-    stim.draw()
-    win.flip()
 
 
 def check_quit():
@@ -67,10 +49,10 @@ def show_message(win, text, wait_for_space=True, height=0.045):
 
 
 def show_block_intro(win, instructions_text, block_idx, total_blocks):
-    """Single combined screen: block progress on top, full instructions
-    below, start prompt at the bottom. Shown every time a block begins."""
-    text = (f"Block {block_idx} of {total_blocks}\n\n"
-            f"{instructions_text}\n\n"
+    """Single combined screen: full instructions + block progress + start
+    prompt, all together. Shown every time a block begins."""
+    text = (f"{instructions_text}\n\n"
+            f"Block {block_idx} of {total_blocks}\n\n"
             f"Press SPACE to start.")
     show_message(win, text)
 
@@ -80,9 +62,9 @@ def show_practice_prompt(win, modality_label):
     show_message(win, text)
 
 
-def show_practice_fail(win, reminder_text):
-    text = (f"Practice incorrect. Practice will restart.\n\n"
-            f"{reminder_text}\n\n"
+def show_practice_fail(win, modality_label):
+    text = (f"{modality_label} — Practice incorrect.\n\n"
+            f"Practice will restart.\n\n"
             f"Press SPACE to start.")
     show_message(win, text)
 
@@ -94,91 +76,72 @@ def show_practice_complete(win, modality_label):
     show_message(win, text)
 
 
-def build_trial_list(n_congruent=N_CONGRUENT_PER_BLOCK,
-                      n_incongruent=N_INCONGRUENT_PER_BLOCK,
-                      target_repeats=None):
-    """Builds one block's trial sequence with two balance constraints:
+def build_trial_list(n_trials=100, n_repeat=33, max_imbalance=3, max_tries=5000):
+    """Full block with strictly fixed counts (defaults: 100 trials):
 
-      1. Combination balance: each congruent color, and each of the 12
-         incongruent (word, color) pairs, appears an equal number of times.
-      2. Repetition balance: the number of adjacent trials that share the
-         same target color ("repeat" trials, per the repetition-effect
-         definition: repeat iff trial[i].color == trial[i-1].color) is
-         exactly target_repeats.
+      * n_trials // 2 congruent, n_trials // 2 incongruent
+      * 1 "first" trial (no predecessor, transition = "first")
+      * n_repeat trials whose ink color == previous ink color ("repeat")
+      * n_trials - 1 - n_repeat trials whose ink color != previous ("alternate")
+        -> 100 trials = 1 first + 33 repeat + 66 alternate
 
-    n_congruent must be a multiple of len(COLOR_WORDS) (4).
-    n_incongruent must be a multiple of the number of incongruent
-    (word, color) combinations (12, for 4 colors).
+    Congruency is split as evenly as possible inside repeat and alternate:
+    alternate is 33 cong / 33 incong; repeat is 16/17 or 17/16 (the odd one
+    out depends on whether the first trial is congruent, so the whole block
+    is exactly 50/50).
 
-    target_repeats defaults to ~25.3% of adjacent pairs (the ratio picked
-    for the 48/48 case: 24 repeats out of 95 pairs), scaled to whatever
-    n_congruent/n_incongruent are given so it doesn't need to be
-    recomputed by hand if those change.
-    """
-    n_colors = len(COLOR_WORDS)
-    incongruent_combos = [(w, c) for w in COLOR_WORDS for c in COLOR_WORDS if w != c]
+    Colors/words are filled in sequentially from a shuffled list of
+    (congruency, transition) cells:
+      repeat    -> ink color == previous ink color
+      alternate -> ink color != previous ink color (one of the other 2)
+      congruent -> word == color; incongruent -> word != color
+    The sequence is re-drawn until per-color and per-word counts are within
+    `max_imbalance` of each other."""
+    n_alt = n_trials - 1 - n_repeat
+    n_cong_total = n_trials // 2
+    assert n_trials % 2 == 0 and 0 <= n_repeat <= n_trials - 1
 
-    if n_congruent % n_colors != 0:
-        raise ValueError(
-            f"n_congruent ({n_congruent}) must be a multiple of {n_colors} colors."
-        )
-    if n_incongruent % len(incongruent_combos) != 0:
-        raise ValueError(
-            f"n_incongruent ({n_incongruent}) must be a multiple of "
-            f"{len(incongruent_combos)} word/color combinations."
-        )
+    def pick_word(color, congruent):
+        if congruent:
+            return color
+        return random.choice([c for c in COLOR_WORDS if c != color])
 
-    if target_repeats is None:
-        n_pairs = n_congruent + n_incongruent - 1
-        target_repeats = round(n_pairs / 4)
+    best = None
+    for _ in range(max_tries):
+        first_cong = random.random() < 0.5
+        cong_left = n_cong_total - int(first_cong)   # congruent among the rest
+        alt_cong = n_alt // 2
+        rep_cong = cong_left - alt_cong
+        assert 0 <= rep_cong <= n_repeat, "counts not satisfiable"
+        cells = ([(True, "repeat")] * rep_cong
+                 + [(False, "repeat")] * (n_repeat - rep_cong)
+                 + [(True, "alternate")] * alt_cong
+                 + [(False, "alternate")] * (n_alt - alt_cong))
+        random.shuffle(cells)
 
-    trials = []
+        color = random.choice(COLOR_WORDS)
+        trials = [{"word": pick_word(color, first_cong), "color": color,
+                   "transition": "first"}]
+        prev_color = color
 
-    per_congruent_color = n_congruent // n_colors
-    for word in COLOR_WORDS:
-        for _ in range(per_congruent_color):
-            trials.append({"word": word, "color": word})
+        for cong, trans in cells:
+            if trans == "repeat":
+                color = prev_color
+            else:
+                color = random.choice([c for c in COLOR_WORDS if c != prev_color])
+            trials.append({"word": pick_word(color, cong), "color": color,
+                           "transition": trans})
+            prev_color = color
 
-    per_incongruent_combo = n_incongruent // len(incongruent_combos)
-    for word, color in incongruent_combos:
-        for _ in range(per_incongruent_combo):
-            trials.append({"word": word, "color": color})
-
-    random.shuffle(trials)
-    trials = _balance_repeats(trials, target_repeats)
-    return trials
-
-
-def _count_repeats(trials):
-    """Number of adjacent pairs sharing the same target color."""
-    return sum(1 for i in range(1, len(trials)) if trials[i]["color"] == trials[i - 1]["color"])
-
-
-def _balance_repeats(trials, target_repeats, max_iterations=REPEAT_BALANCE_MAX_ITERATIONS):
-    """Hill-climbs toward an exact repeat count by swapping pairs of trial
-    positions (which changes adjacency but never the underlying combination
-    counts, so combination balance is preserved automatically)."""
-    trials = trials[:]
-    n = len(trials)
-    current = _count_repeats(trials)
-
-    for _ in range(max_iterations):
-        if current == target_repeats:
-            return trials
-        i, j = random.sample(range(n), 2)
-        trials[i], trials[j] = trials[j], trials[i]
-        new_count = _count_repeats(trials)
-        if abs(new_count - target_repeats) < abs(current - target_repeats):
-            current = new_count
-        else:
-            trials[i], trials[j] = trials[j], trials[i]  # revert the swap
-
-    if current != target_repeats:
-        raise RuntimeError(
-            f"Could not balance repeat count to exactly {target_repeats} "
-            f"within {max_iterations} iterations (best reached: {current})."
-        )
-    return trials
+        color_counts = [sum(t["color"] == c for t in trials) for c in COLOR_WORDS]
+        word_counts = [sum(t["word"] == c for t in trials) for c in COLOR_WORDS]
+        spread = max(max(color_counts) - min(color_counts),
+                     max(word_counts) - min(word_counts))
+        if best is None or spread < best[0]:
+            best = (spread, trials)
+        if spread <= max_imbalance:
+            break
+    return best[1]
 
 
 def build_practice_list(n=PRACTICE_N):

@@ -8,20 +8,15 @@ from stroop_common import (
     write_csv_row, MAX_PRACTICE_ATTEMPTS,
 )
 
-# d/f/j/k -> color, left/right hand symmetric mapping
-KEY_TO_COLOR = {"d": "red", "f": "blue", "j": "green", "k": "yellow"}
+# j/k/l -> color (right hand, left-to-right)
+KEY_TO_COLOR = {"j": "red", "k": "blue", "l": "green"}
 RESPONSE_TIMEOUT = 2.0  # seconds, same as SILENCE_TIMEOUT in the voice version
 
 INSTRUCTIONS_TEXT = (
     "In each trial, press the key matching the INK COLOR of the word "
     "as fast as you can (ignore what the word says).\n\n"
-    "D = red      F = blue      J = green      K = yellow\n\n"
+    "J = red      K = blue      L = green\n\n"
     "You will hear a tone after each response."
-)
-
-PRACTICE_REMINDER_TEXT = (
-    "Remember: press the key matching the INK COLOR — "
-    "D = red   F = blue   J = green   K = yellow"
 )
 
 
@@ -105,6 +100,7 @@ class ManualModality:
             "word": word,
             "color": color,
             "congruent": congruent,
+            "transition": trial.get("transition", ""),
             "rt_ms": round(result["rt_ms"], 1) if result["rt_ms"] else "",
             "correct": is_correct,
             "timed_out": result["timed_out"],
@@ -131,12 +127,12 @@ class ManualModality:
             if passed:
                 show_practice_complete(self.win, self.label)
                 return True
-            show_practice_fail(self.win, PRACTICE_REMINDER_TEXT)  # also doubles as the
+            show_practice_fail(self.win, self.label)  # also doubles as the
             # "press space to start" prompt for the next round
         return False
 
     def run_block(self, block_num_total, n_trials, data_path):
-        trials = build_trial_list(n_congruent=n_trials, n_incongruent=n_trials)
+        trials = build_trial_list(n_trials)
         for i, trial in enumerate(trials, start=1):
             check_quit()
             row, _ = self._run_trial(trial, block_num_total, i, record=True)

@@ -5,7 +5,7 @@ sys.path.insert(0, 'E:/lib/data6')
 import expLib61 as exlib
 from psychopy import visual
 
-from stroop_common import CSV_FIELDNAMES, show_welcome, show_loading
+from stroop_common import CSV_FIELDNAMES, show_welcome
 from stroop_voicekey import VoiceModality
 from stroop_manual import ManualModality
 
@@ -13,14 +13,12 @@ dbConf = exlib.beta
 expName = "rt-voice"
 seed = None
 
-nBlocks = 4          
-nTrials = 48 # must be multiple of 12
-
-assert nTrials % 12 == 0, f"nTrials ({nTrials}) must be divisible by 12."
+nBlocks = 3
+nTrials = 100       
+                    
 refreshRate = 165
 exlib.setRefreshRate(refreshRate)
 pool = 3
-
 [pid, _, _] = exlib.startExp(expName, dbConf, pool, lockBox=True, refreshRate=refreshRate)
 
 BG_COLOR = [-0.85, -0.85, -0.85]
@@ -44,15 +42,12 @@ data_path = os.path.join("data", f"{pid}.csv")
 with open(data_path, "w", newline="", encoding="utf-8") as f:
     csv.DictWriter(f, fieldnames=CSV_FIELDNAMES).writeheader()
 
-# Loading the voice recognizer model (inside VoiceModality.__init__) takes
-# tens of seconds, so show a "please wait" screen first; whatever screen
-# comes next (the first block's intro) replaces it automatically once
-# loading finishes, with no keypress needed in between.
-show_loading(win)
 voice_mod = VoiceModality(win, pid)
 manual_mod = ManualModality(win, pid)
 modalities = {"voice": voice_mod, "manual": manual_mod}
 
+# practice only runs the first time each modality is encountered
+practice_done = {"voice": False, "manual": False}
 aborted = False
 
 for block_idx, modality_key in enumerate(modality_sequence, start=1):
@@ -61,13 +56,13 @@ for block_idx, modality_key in enumerate(modality_sequence, start=1):
 
     mod.show_block_intro(block_idx, TOTAL_BLOCKS)  # combined instructions + "Block N of 8" + start prompt
 
-    # practice runs at the start of every block (not just the first time a
-    # modality appears)
-    passed = mod.run_practice()
-    if not passed:
-        mod.exit_block()
-        aborted = True
-        break
+    if not practice_done[modality_key]:
+        passed = mod.run_practice()
+        if not passed:
+            mod.exit_block()
+            aborted = True
+            break
+        practice_done[modality_key] = True
 
     mod.run_block(block_idx, nTrials, data_path)
     mod.exit_block()  # closes the mic if this was a voice block
