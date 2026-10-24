@@ -10,8 +10,8 @@ prefs.hardware['audioLatencyMode']=3
 from psychopy import core, visual, sound, event
 import numpy as np
 import sys
-sys.path.insert(0, 'E:/lib/data5')
-import expLib51 as el
+sys.path.insert(0, 'E:/lib/data6')
+import expLib61 as el
 
 
 
@@ -24,13 +24,15 @@ import expLib51 as el
 # Run with python example.py (or whatever the file name is)
 # to deactivate virtual environment: deactivate
 
+refreshRate=165
 trialClock=core.Clock()
+el.setRefreshRate(refreshRate)
 
 win=visual.Window(units= "pix", size=(1000, 1000), color=[-1,-1,-1], fullscr = False)
 
 Adjust = 0
 
-def run_trial(x,y):
+def run_trial(x):
     text = visual.TextStim(win,"Welcome to the experiment! Press key to start trial", height = 40, pos = (0,-100))
     text.draw()
     win.flip()
@@ -38,9 +40,10 @@ def run_trial(x,y):
     global Adjust
     
     
-    list_letters = ["a","s","d","f","g", "h", "j", "k", "l"]
+    list_letters = ["A","S","D","F","G", "H", "J", "K", "L"]
+    
     rand_letters = random.sample(list_letters,4)
- 
+   
     #Draw the rectangles I actually want
     center_rectangle = visual.Rect(win, width = 100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos = (0,-100))
     rectangle1 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos= (-283,183))
@@ -78,14 +81,18 @@ def run_trial(x,y):
     letter4 = visual.TextStim(win, rand_letters[3],height= 40, color='white', pos = (283,183))
     letters = [letter1, letter2, letter3, letter4]
 
+    ### Feedback sounds ##
+    correctSound1 = sound.Sound(800, secs=0.15)
+    correctSound2 = sound.Sound(1200, secs=0.15)
+    errorSound1 = sound.Sound(500, secs=0.30)
+    errorSound2 = sound.Sound(375, secs=0.30)
     
     correct_answer = rand_letters[mult_num-1]
     
     
     frames = []
-    #first frame durations is for testing
-    frameDurations=  [50,x,50,y, 20, 20, 20, 20, 20]
-    #frameDurations= [x,25,y, 10, 10, 10, 10, 10]
+    #We are changing the third one. The last five are masks
+    frameDurations=  [100, 30, x, 20, 5, 5, 5, 5, 5]
     
     frames.append(visual.BufferImageStim(win,stim = rectangles))
     frames.append(visual.BufferImageStim(win, stim= rectangles + [number]))
@@ -93,10 +100,10 @@ def run_trial(x,y):
     frames.append(visual.BufferImageStim(win,stim= rectangles + letters))
     
     for i in ["!", "@", "#", "$", "%"]:
-            frames.append(visual.BufferImageStim(win, stim= rectangles + [visual.TextStim(win, i,color=[-1,-1,-1], height= 40, pos = (-283,183)), 
-                                                                          visual.TextStim(win, i, color=[-1,-1,-1], height= 40, pos = (-104,286)),
-                                                                          visual.TextStim(win, i, color=[-1,-1,-1], height= 40,  pos = (283,183)),
-                                                                          visual.TextStim(win, i, color=[-1,-1,-1], height= 40, pos = (104,286))]))
+            frames.append(visual.BufferImageStim(win, stim= rectangles + [visual.TextStim(win, i,color=[1,1,1], height= 40, pos = (-283,183)), 
+                                                                          visual.TextStim(win, i, color=[1,1,1], height= 40, pos = (-104,286)),
+                                                                          visual.TextStim(win, i, color=[1,1,1], height= 40,  pos = (283,183)),
+                                                                          visual.TextStim(win, i, color=[1,1,1], height= 40, pos = (104,286))]))
     
     
     stamps=el.runFrames(win,frames,frameDurations,trialClock)
@@ -105,7 +112,8 @@ def run_trial(x,y):
     prompt.draw()
     win.flip()
     
-    keys = event.waitKeys(keyList = list_letters)
+    #keys = event.waitKeys(keyList = list_letters)
+    keys = event.waitKeys(keyList=[l.lower() for l in list_letters])
     
     print(keys)
     
@@ -116,15 +124,22 @@ def run_trial(x,y):
         
     Condition_text.draw()
         
-    if correct_answer in keys:
+    if correct_answer.lower() in keys:
         correct_text =  visual.TextStim(win, "Correct!",height= 40, color=[0,1,0], pos = (0,-100))
         correct_text.draw()
         Adjust = "correct"
+        correctSound1.play()
+        core.wait(0.1)
+        correctSound2.play()
+
        
     else:
         wrong_text = visual.TextStim(win, "Incorrect",height= 40, color=[1,0,0], pos = (0,-100))
         wrong_text.draw()
         Adjust = "incorrect"
+        errorSound1.play()
+        core.wait(0.1)
+        errorSound2.play()
       
     
     win.flip()
@@ -134,25 +149,24 @@ def run_trial(x,y):
 
 
 #time the numbers stay on screen
-num_time = 70
-#time the letters stay on screen
-let_time= 70
+wait_time = 30 
+
 
 #for i in range(10):
-#    run_trial(num_time, let_time)
+#    run_trial(wait_time, let_time)
 
 for i in range(5):
-    run_trial(num_time, let_time)
+    run_trial(wait_time)
     if 'escape' in event.getKeys():
         print("Experiment aborted by user.")
         win.close()
     if Adjust == "correct":
-        num_time = int(num_time*0.5)
-        let_time = int( let_time*0.5)
+        wait_time = int(wait_time*0.3)
+
 
     elif Adjust == "incorrect":
-        num_time = num_time*5
-        let_time = let_time*5
+        wait_time = wait_time*3
+
         
 
 win.close()
