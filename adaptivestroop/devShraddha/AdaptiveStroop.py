@@ -92,7 +92,7 @@ def run_trial(x):
     
     frames = []
     #We are changing the third one. The last five are masks
-    frameDurations=  [100, 30, x, 20, 5, 5, 5, 5, 5]
+    frameDurations=  [100, 30, 100, 20, 5, 5, 5, 5, 5]
     
     frames.append(visual.BufferImageStim(win,stim = rectangles))
     frames.append(visual.BufferImageStim(win, stim= rectangles + [number]))
