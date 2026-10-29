@@ -30,15 +30,19 @@ el.setRefreshRate(refreshRate)
 
 win=visual.Window(units= "pix", size=(1000, 1000), color=[-1,-1,-1], fullscr = False)
 
-Adjust = 0
+Correct = 3
+globe_cond = 3
+
 
 def run_trial(x):
     text = visual.TextStim(win,"Welcome to the experiment! Press key to start trial", height = 40, pos = (0,-100))
     text.draw()
     win.flip()
     event.waitKeys()
-    global Adjust
-    
+    global Correct
+    global globe_cond
+
+        
     
     list_letters = ["A","S","D","F","G", "H", "J", "K", "L"]
     
@@ -54,6 +58,8 @@ def run_trial(x):
     
     #selecting if it will be congruent or incongruent
     cond = random.randint(1,2)
+    globe_cond = cond
+    
     
     #congruent
     if cond == 1:
@@ -63,7 +69,7 @@ def run_trial(x):
         number.draw()
         
     #incongruent
-    else:
+    if cond ==2:
         
         rand_num = (random.randint(1,4))
         mult_num_option = [1,2,3,4]
@@ -92,7 +98,7 @@ def run_trial(x):
     
     frames = []
     #We are changing the third one. The last five are masks
-    frameDurations=  [100, 30, 100, 20, 5, 5, 5, 5, 5]
+    frameDurations=  [100, 30, x, 20, 5, 5, 5, 5, 5]
     
     frames.append(visual.BufferImageStim(win,stim = rectangles))
     frames.append(visual.BufferImageStim(win, stim= rectangles + [number]))
@@ -127,7 +133,7 @@ def run_trial(x):
     if correct_answer.lower() in keys:
         correct_text =  visual.TextStim(win, "Correct!",height= 40, color=[0,1,0], pos = (0,-100))
         correct_text.draw()
-        Adjust = "correct"
+        Correct = 1
         correctSound1.play()
         core.wait(0.1)
         correctSound2.play()
@@ -136,7 +142,7 @@ def run_trial(x):
     else:
         wrong_text = visual.TextStim(win, "Incorrect",height= 40, color=[1,0,0], pos = (0,-100))
         wrong_text.draw()
-        Adjust = "incorrect"
+        Correct = 0
         errorSound1.play()
         core.wait(0.1)
         errorSound2.play()
@@ -144,30 +150,69 @@ def run_trial(x):
     
     win.flip()
     core.wait(3)
-    print("Difference Between Time Stamps:\n",np.diff(stamps),"\n")
-    print("Difference Between Frames:\n",el.actualFrameDurations(frameDurations,stamps))
+    #print("Difference Between Time Stamps:\n",np.diff(stamps),"\n")
+    #print("Difference Between Frames:\n",el.actualFrameDurations(frameDurations,stamps))
 
 
 #time the numbers stay on screen
-wait_time = 30 
+#use 30 for a normal trial. use 100 for easy
+wait_time = 30
+Congruent_wait = 30
+Incongruent_wait = 30 
 
 
-#for i in range(10):
-#    run_trial(wait_time, let_time)
+Congruent_counter = 0
+Incongruent_counter = 0
+increment = 5
 
-for i in range(5):
-    run_trial(wait_time)
+for i in range(30):
+    
+    if globe_cond ==3:
+        run_trial(wait_time)
+    if globe_cond ==1:
+        run_trial(Congruent_wait)
+    if globe_cond == 2:
+        run_trial(Incongruent_wait)
+    
+    
+    
     if 'escape' in event.getKeys():
         print("Experiment aborted by user.")
         win.close()
-    if Adjust == "correct":
-        wait_time = int(wait_time*0.3)
-
-
-    elif Adjust == "incorrect":
-        wait_time = wait_time*3
-
         
+    #stiarcase for congruent    
+    if globe_cond == 1:
+
+        if (Correct == 1)&(Congruent_counter== 0):
+            Congruent_counter += 1
+    
+        elif (Correct ==1) & (Congruent_counter == 1):
+            Congruent_wait = Congruent_wait - increment
+            Congruent_counter = 0
+    
+        elif Correct == 0:
+            Congruent_wait += increment
+            Congruent_counter = 0
+            
+            
+        print("Congruent: wait time: " + str(Congruent_wait) + ". Correct? " + str(Correct) + ". counter: " + str(Congruent_counter))
+            
+    if globe_cond == 2:
+        if (Correct ==1) & (Incongruent_counter == 0):
+            Incongruent_counter +=1
+        elif (Correct==1) & (Incongruent_counter ==1):
+            Incongruent_wait = Incongruent_wait - increment
+            Incongruent_counter = 0
+        elif Correct == 0:
+            Incongruent_wait += increment
+            Incongruent_counter = 0
+            
+        print("Incongruent: wait time: " + str(Incongruent_wait) + ". Correct? " + str(Correct) + ". counter: " + str(Incongruent_counter))
+
+    
+    
+
+
 
 win.close()
 
