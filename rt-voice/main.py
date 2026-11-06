@@ -13,12 +13,15 @@ dbConf = exlib.beta
 expName = "rt-voice"
 seed = None
 
-nBlocks = 3
-nTrials = 100       
-                    
+nBlocks = 4          # blocks PER modality -> total sequence is nBlocks * 2
+nTrials = 100        # trials per block. Fixed composition (see build_trial_list):
+                     # 50 congruent / 50 incongruent, and 1 "first" +
+                     # 33 repeat + 66 alternate ink-color transitions.
+                     # Exclude the "first" trial from transition analyses.
 refreshRate = 165
 exlib.setRefreshRate(refreshRate)
 pool = 3
+
 [pid, _, _] = exlib.startExp(expName, dbConf, pool, lockBox=True, refreshRate=refreshRate)
 
 BG_COLOR = [-0.85, -0.85, -0.85]
