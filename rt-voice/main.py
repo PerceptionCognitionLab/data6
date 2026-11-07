@@ -4,6 +4,7 @@ import csv
 sys.path.insert(0, 'E:/lib/data6')
 import expLib61 as exlib
 from psychopy import visual
+import random 
 
 from stroop_common import CSV_FIELDNAMES, show_welcome
 from stroop_voicekey import VoiceModality
@@ -11,7 +12,7 @@ from stroop_manual import ManualModality
 
 dbConf = exlib.beta
 expName = "rt-voice"
-seed = None
+seed = random.randint(0,1000)
 
 nBlocks = 4          # blocks PER modality -> total sequence is nBlocks * 2
 nTrials = 100        # trials per block. Fixed composition (see build_trial_list):
@@ -22,7 +23,7 @@ refreshRate = 165
 exlib.setRefreshRate(refreshRate)
 pool = 3
 
-[pid, _, _] = exlib.startExp(expName, dbConf, pool, lockBox=True, refreshRate=refreshRate)
+[pid, sid, _] = exlib.startExp(expName, dbConf, pool, lockBox=True, refreshRate=refreshRate)
 
 BG_COLOR = [-0.85, -0.85, -0.85]
 win = visual.Window(fullscr=True, color=BG_COLOR, units="height", allowGUI=False)
@@ -78,4 +79,4 @@ resX, resY = concern_win.size
 concern = exlib.getConcern(concern_win)
 concern_win.close()
 
-exlib.stopExp(pid, refreshRate, resX, resY, seed, dbConf, concern)
+exlib.stopExp(sid, refreshRate, resX, resY, seed, dbConf, concern)
