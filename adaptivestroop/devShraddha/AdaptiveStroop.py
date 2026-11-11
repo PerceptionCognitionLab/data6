@@ -9,6 +9,7 @@ prefs.hardware['audioLib']=['PTB']
 prefs.hardware['audioLatencyMode']=3
 from psychopy import core, visual, sound, event
 import numpy as np
+import pandas as pd
 import sys
 sys.path.insert(0, 'E:/lib/data6')
 import expLib61 as el
@@ -32,6 +33,7 @@ win=visual.Window(units= "pix", size=(1000, 1000), color=[-1,-1,-1], fullscr = F
 
 Correct = 3
 globe_cond = 3
+results = []
 
 
 def run_trial(x):
@@ -55,6 +57,13 @@ def run_trial(x):
     rectangle3 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos=(283, 183))
     rectangle4 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos =(104,286))
     rectangles = [rectangle1, rectangle2, rectangle3, rectangle4, center_rectangle]
+    label1 = visual.TextStim(win,"ONE", height = 40, pos = (-283,283))
+    label2 = visual.TextStim(win,"TWO", height = 40, pos = (-104,386))
+    label3 = visual.TextStim(win,"FOUR", height = 40, pos = (283,283))
+    label4 = visual.TextStim(win,"THREE", height = 40, pos = (104,386))
+    labels = [label1, label2, label3,label4]
+
+
     
     #selecting if it will be congruent or incongruent
     cond = random.randint(1,2)
@@ -100,10 +109,10 @@ def run_trial(x):
     #We are changing the third one. The last five are masks
     frameDurations=  [100, 30, x, 20, 5, 5, 5, 5, 5]
     
-    frames.append(visual.BufferImageStim(win,stim = rectangles))
-    frames.append(visual.BufferImageStim(win, stim= rectangles + [number]))
-    frames.append(visual.BufferImageStim(win, stim= rectangles))
-    frames.append(visual.BufferImageStim(win,stim= rectangles + letters))
+    frames.append(visual.BufferImageStim(win,stim = rectangles + labels))
+    frames.append(visual.BufferImageStim(win, stim= rectangles + labels + [number]))
+    frames.append(visual.BufferImageStim(win, stim= rectangles + labels))
+    frames.append(visual.BufferImageStim(win,stim= rectangles + labels + letters))
     
     for i in ["!", "@", "#", "$", "%"]:
             frames.append(visual.BufferImageStim(win, stim= rectangles + [visual.TextStim(win, i,color=[1,1,1], height= 40, pos = (-283,183)), 
@@ -147,6 +156,12 @@ def run_trial(x):
         core.wait(0.1)
         errorSound2.play()
       
+    return {
+        'congruency': 'congruent' if cond ==1 else 'incongruent',
+        'correct': 'correct' if Correct==1 else 'incorrect',
+        'Incongruent staircase counter': Incongruent_counter,
+        'Congruent staircase counter': Congruent_counter,
+        'wait_time': wait_time}
     
     win.flip()
     core.wait(3)
@@ -166,6 +181,8 @@ Incongruent_counter = 0
 increment = 5
 
 for i in range(30):
+    
+    
     
     if globe_cond ==3:
         run_trial(wait_time)
@@ -210,7 +227,7 @@ for i in range(30):
         print("Incongruent: wait time: " + str(Incongruent_wait) + ". Correct? " + str(Correct) + ". counter: " + str(Incongruent_counter))
 
     
-    
+df = pd.DataFrame(results)
 
 
 
