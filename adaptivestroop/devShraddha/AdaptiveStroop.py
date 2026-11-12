@@ -15,69 +15,58 @@ sys.path.insert(0, 'E:/lib/data6')
 import expLib61 as el
 
 
-
-#NOTE: This below notes have absolutely nothing to do with adaptive stroop
-# Steps we did to actually run the code
-# create a new folder with the code in it
-# Creating virtual enviornment: python -m venv venv
-# Activate virtual environment: .venv\Scripts\activate
-# Install psychopy: python -m pip install psychopy 
-# Run with python example.py (or whatever the file name is)
-# to deactivate virtual environment: deactivate
-
+#Setting refresh rate and clock
+#Screen refreshes every 1/165 seconds = 6.06 ms
 refreshRate=165
 trialClock=core.Clock()
 el.setRefreshRate(refreshRate)
 
+#making a window to display stuff
 win=visual.Window(units= "pix", size=(1000, 1000), color=[-1,-1,-1], fullscr = False)
 
+#variable for if the participant answers right. It will change to 1 or 0 after a trial
 Correct = 3
-globe_cond = 3
-results = []
 
-
-def run_trial(x):
+#Function to run the actual trial
+def run_trial(cond, x):
+    
+    #Starting text shows. press a key to continue
     text = visual.TextStim(win,"Welcome to the experiment! Press key to start trial", height = 40, pos = (0,-100))
     text.draw()
     win.flip()
     event.waitKeys()
     global Correct
-    global globe_cond
 
-        
-    
+    #Possible responses the participant can have
     list_letters = ["A","S","D","F","G", "H", "J", "K", "L"]
     
+    #Letters that the stimulus will show in the top boxes
     rand_letters = random.sample(list_letters,4)
    
-    #Draw the rectangles I actually want
+    #Setting the rectangles to show imperitive and stimulus
     center_rectangle = visual.Rect(win, width = 100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos = (0,-100))
     rectangle1 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos= (-283,183))
     rectangle2 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos=(-104, 286))
     rectangle3 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos=(283, 183))
     rectangle4 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos =(104,286))
     rectangles = [rectangle1, rectangle2, rectangle3, rectangle4, center_rectangle]
+    
+    #Setting labels to put above each box to indicate which one corresponds to some number of digits in the imperitive
     label1 = visual.TextStim(win,"ONE", height = 40, pos = (-283,283))
     label2 = visual.TextStim(win,"TWO", height = 40, pos = (-104,386))
     label3 = visual.TextStim(win,"FOUR", height = 40, pos = (283,283))
     label4 = visual.TextStim(win,"THREE", height = 40, pos = (104,386))
     labels = [label1, label2, label3,label4]
-
-
-    
-    #selecting if it will be congruent or incongruent
-    cond = random.randint(1,2)
-    globe_cond = cond
     
     
-    #congruent
+    #If congruent, make and draw a number with the same amount of digits as the number shown
     if cond == 1:
         rand_num = random.randint(1,4)
         mult_num = rand_num
         number = visual.TextStim(win, str(rand_num) * (rand_num), height= 40, color=[1,1,1], pos = (0,-100))
         number.draw()
         
-    #incongruent
+    #If incongruent, make and draw a random number with a number that does NOT have the same number of digits 
     if cond ==2:
         
         rand_num = (random.randint(1,4))
@@ -127,7 +116,6 @@ def run_trial(x):
     prompt.draw()
     win.flip()
     
-    #keys = event.waitKeys(keyList = list_letters)
     keys = event.waitKeys(keyList=[l.lower() for l in list_letters])
     
     print(keys)
@@ -156,15 +144,16 @@ def run_trial(x):
         core.wait(0.1)
         errorSound2.play()
       
-    return {
-        'congruency': 'congruent' if cond ==1 else 'incongruent',
-        'correct': 'correct' if Correct==1 else 'incorrect',
-        'Incongruent staircase counter': Incongruent_counter,
-        'Congruent staircase counter': Congruent_counter,
-        'wait_time': wait_time}
+
     
     win.flip()
     core.wait(3)
+    
+    return {
+        'congruency': 'congruent' if cond ==1 else 'incongruent',
+        'correct': 'correct' if Correct==1 else 'incorrect',
+        'wait_time': x}
+    
     #print("Difference Between Time Stamps:\n",np.diff(stamps),"\n")
     #print("Difference Between Frames:\n",el.actualFrameDurations(frameDurations,stamps))
 
@@ -180,25 +169,26 @@ Congruent_counter = 0
 Incongruent_counter = 0
 increment = 5
 
-for i in range(30):
+results = []
+
+
+for trial in range(40):
     
+    cond = random.randint(1,2)
+    wait_used = Congruent_wait if cond ==1 else Incongruent_wait
+    result = run_trial(cond, wait_used)
     
-    
-    if globe_cond ==3:
-        run_trial(wait_time)
-    if globe_cond ==1:
-        run_trial(Congruent_wait)
-    if globe_cond == 2:
-        run_trial(Incongruent_wait)
+
     
     
     
     if 'escape' in event.getKeys():
         print("Experiment aborted by user.")
+        break
         win.close()
         
     #stiarcase for congruent    
-    if globe_cond == 1:
+    if cond == 1:
 
         if (Correct == 1)&(Congruent_counter== 0):
             Congruent_counter += 1
@@ -212,9 +202,9 @@ for i in range(30):
             Congruent_counter = 0
             
             
-        print("Congruent: wait time: " + str(Congruent_wait) + ". Correct? " + str(Correct) + ". counter: " + str(Congruent_counter))
+       # print("Congruent: wait time: " + str(Congruent_wait) + ". Correct? " + str(Correct) + ". counter: " + str(Congruent_counter))
             
-    if globe_cond == 2:
+    if cond == 2:
         if (Correct ==1) & (Incongruent_counter == 0):
             Incongruent_counter +=1
         elif (Correct==1) & (Incongruent_counter ==1):
@@ -224,10 +214,17 @@ for i in range(30):
             Incongruent_wait += increment
             Incongruent_counter = 0
             
-        print("Incongruent: wait time: " + str(Incongruent_wait) + ". Correct? " + str(Correct) + ". counter: " + str(Incongruent_counter))
+        #print("Incongruent: wait time: " + str(Incongruent_wait) + ". Correct? " + str(Correct) + ". counter: " + str(Incongruent_counter))
 
+    result['trial'] = trial +1
+    result['congruent_counter'] = Congruent_counter
+    result['incongruent_counter'] = Incongruent_counter
+    result['next_congruent_wait'] = Congruent_wait
+    result['next_incongruent_wait']= Incongruent_wait
+    results.append(result)
     
 df = pd.DataFrame(results)
+print(df)
 
 
 

@@ -20,7 +20,14 @@ import sys
 sys.path.insert(0, 'E:/lib/data5')
 import expLib51 as el
 
-
+#NOTE: This below notes have absolutely nothing to do with adaptive stroop
+# Steps we did to actually run the code
+# create a new folder with the code in it
+# Creating virtual enviornment: python -m venv venv
+# Activate virtual environment: .venv\Scripts\activate
+# Install psychopy: python -m pip install psychopy 
+# Run with python example.py (or whatever the file name is)
+# to deactivate virtual environment: deactivate
 
 trialClock=core.Clock()
 
