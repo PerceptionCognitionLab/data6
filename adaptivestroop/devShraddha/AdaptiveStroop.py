@@ -44,18 +44,23 @@ def run_trial(cond, x):
     rand_letters = random.sample(list_letters,4)
    
     #Setting the rectangles to show imperitive and stimulus
+    #old: x_close was +/-104, y_close was 183. x_far was +/- 283 and y_far was 286
+    x_close = 122
+    y_close = 296
+    x_far = 296
+    y_far = 122
     center_rectangle = visual.Rect(win, width = 100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos = (0,-100))
-    rectangle1 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos= (-283,183))
-    rectangle2 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos=(-104, 286))
-    rectangle3 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos=(283, 183))
-    rectangle4 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos =(104,286))
+    rectangle1 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos= (-x_far,y_far))
+    rectangle2 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos=(-x_close, y_close))
+    rectangle3 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos=(x_far, y_far))
+    rectangle4 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos =(x_close, y_close))
     rectangles = [rectangle1, rectangle2, rectangle3, rectangle4, center_rectangle]
     
     #Setting labels to put above each box to indicate which one corresponds to some number of digits in the imperitive
-    label1 = visual.TextStim(win,"ONE", height = 40, pos = (-283,283))
-    label2 = visual.TextStim(win,"TWO", height = 40, pos = (-104,386))
-    label3 = visual.TextStim(win,"FOUR", height = 40, pos = (283,283))
-    label4 = visual.TextStim(win,"THREE", height = 40, pos = (104,386))
+    label1 = visual.TextStim(win,"ONE", height = 40, pos = (-x_far, y_far + 100))
+    label2 = visual.TextStim(win,"TWO", height = 40, pos = (-x_close, y_close + 100))
+    label3 = visual.TextStim(win,"FOUR", height = 40, pos = (x_far, y_far + 100))
+    label4 = visual.TextStim(win,"THREE", height = 40, pos = (x_close,y_close + 100))
     labels = [label1, label2, label3,label4]
     
     
@@ -79,10 +84,10 @@ def run_trial(cond, x):
     
     
     
-    letter1 = visual.TextStim(win, rand_letters[0],height= 40, color='white', pos = (-283,183))
-    letter2 = visual.TextStim(win, rand_letters[1],height= 40, color='white', pos = (-104,286))
-    letter3 = visual.TextStim(win, rand_letters[2],height= 40, color='white', pos = (104,286))
-    letter4 = visual.TextStim(win, rand_letters[3],height= 40, color='white', pos = (283,183))
+    letter1 = visual.TextStim(win, rand_letters[0],height= 40, color='white', pos = (-x_far, y_far))
+    letter2 = visual.TextStim(win, rand_letters[1],height= 40, color='white', pos = (-x_close, y_close))
+    letter3 = visual.TextStim(win, rand_letters[2],height= 40, color='white', pos = (x_close, y_close))
+    letter4 = visual.TextStim(win, rand_letters[3],height= 40, color='white', pos = (x_far,y_far))
     letters = [letter1, letter2, letter3, letter4]
 
     ### Feedback sounds ##
@@ -96,7 +101,7 @@ def run_trial(cond, x):
     
     frames = []
     #We are changing the third one. The last five are masks
-    frameDurations=  [100, 30, x, 20, 5, 5, 5, 5, 5]
+    frameDurations=  [100, 30, x, 20, 5, 5, 5, 5, 5] 
     
     frames.append(visual.BufferImageStim(win,stim = rectangles + labels))
     frames.append(visual.BufferImageStim(win, stim= rectangles + labels + [number]))
@@ -104,10 +109,10 @@ def run_trial(cond, x):
     frames.append(visual.BufferImageStim(win,stim= rectangles + labels + letters))
     
     for i in ["!", "@", "#", "$", "%"]:
-            frames.append(visual.BufferImageStim(win, stim= rectangles + [visual.TextStim(win, i,color=[1,1,1], height= 40, pos = (-283,183)), 
-                                                                          visual.TextStim(win, i, color=[1,1,1], height= 40, pos = (-104,286)),
-                                                                          visual.TextStim(win, i, color=[1,1,1], height= 40,  pos = (283,183)),
-                                                                          visual.TextStim(win, i, color=[1,1,1], height= 40, pos = (104,286))]))
+            frames.append(visual.BufferImageStim(win, stim= rectangles + [visual.TextStim(win, i,color=[1,1,1], height= 40, pos = (-x_far, y_far)), 
+                                                                          visual.TextStim(win, i, color=[1,1,1], height= 40, pos = (-x_close, y_close)),
+                                                                          visual.TextStim(win, i, color=[1,1,1], height= 40,  pos = (x_far, y_far)),
+                                                                          visual.TextStim(win, i, color=[1,1,1], height= 40, pos = (x_close, y_close))]))
     
     
     stamps=el.runFrames(win,frames,frameDurations,trialClock)
