@@ -45,11 +45,15 @@ def run_trial(cond, x):
    
     #Setting the rectangles to show imperitive and stimulus
     #old: x_close was +/-104, y_close was 183. x_far was +/- 283 and y_far was 286
-    x_close = 122
-    y_close = 296
-    x_far = 296
-    y_far = 122
-    center_rectangle = visual.Rect(win, width = 100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos = (0,-100))
+    #old2: x_close was 122, y close was 296. x_far was 296. y_far was 122
+    #NOTE: the old one was too far up. needed to shift down 100 pixels
+    #old center rectangle used to be -100
+    x_close = 169
+    y_close = 362
+    x_far = 386
+    y_far = 103
+    center = (0,0)
+    center_rectangle = visual.Rect(win, width = 100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos = center)
     rectangle1 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos= (-x_far,y_far))
     rectangle2 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos=(-x_close, y_close))
     rectangle3 = visual.Rect(win, width=100, height=100, fillColor = 'black', lineColor = 'white', lineWidth = 4, pos=(x_far, y_far))
@@ -68,7 +72,7 @@ def run_trial(cond, x):
     if cond == 1:
         rand_num = random.randint(1,4)
         mult_num = rand_num
-        number = visual.TextStim(win, str(rand_num) * (rand_num), height= 40, color=[1,1,1], pos = (0,-100))
+        number = visual.TextStim(win, str(rand_num) * (rand_num), height= 40, color=[1,1,1], pos = center)
         number.draw()
         
     #If incongruent, make and draw a random number with a number that does NOT have the same number of digits 
@@ -78,7 +82,7 @@ def run_trial(cond, x):
         mult_num_option = [1,2,3,4]
         mult_num_option.remove(rand_num)
         mult_num = random.choice(mult_num_option)
-        number = visual.TextStim(win, str(rand_num) * mult_num, height= 40, color=[1,1,1], pos = (0,-100))
+        number = visual.TextStim(win, str(rand_num) * mult_num, height= 40, color=[1,1,1], pos = center)
         number.draw()
     
     
@@ -101,7 +105,8 @@ def run_trial(cond, x):
     
     frames = []
     #We are changing the third one. The last five are masks
-    frameDurations=  [100, 30, x, 20, 5, 5, 5, 5, 5] 
+    #changing the fourth one from 20 to 10
+    frameDurations=  [100, 30, x, 10, 5, 5, 5, 5, 5] 
     
     frames.append(visual.BufferImageStim(win,stim = rectangles + labels))
     frames.append(visual.BufferImageStim(win, stim= rectangles + labels + [number]))
